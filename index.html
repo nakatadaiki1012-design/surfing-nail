@@ -105,10 +105,11 @@ body {
 }
 #hint.show { opacity: .92; }
 #big {
-  position: fixed; left: 0; right: 0; top: calc(26% - 60px); text-align: center; pointer-events: none;
+  position: fixed; left: 0; right: 0; top: calc(235px + env(safe-area-inset-top, 0px)); text-align: center; pointer-events: none;
   font-family: var(--display); font-size: clamp(18px, 4.6vw, 32px); color: var(--sun);
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
+#big small { font-size: .55em; color: #fff; }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
 
 /* touch controls */
@@ -193,7 +194,7 @@ body.touch #pad {
   <div id="wantBig"><span id="wantBottle"></span><span>ほしい色</span><b id="wantName">ピンク</b><span id="wantState">をひろってね</span></div>
 </div>
 
-<div id="big" hidden>ビッグウェーブ！ スコア2倍</div>
+<div id="big" hidden>ビッグウェーブ！ スコア2倍<br><small>← 左の波のカベを登って、てっぺんでエアリアル！</small></div>
 <div id="pop"></div>
 <div id="zure" hidden>ズレてる！</div>
 <div id="hint"></div>
@@ -213,7 +214,7 @@ body.touch #pad {
       <div><kbd>2</kbd><span><b>ぬるボタンを長押し</b>でツメをぬる</span></div>
       <div><kbd>3</kbd><span>ぬっている間は<b>じっとする</b>ときれいに仕上がる</span></div>
     </div>
-    <p class="lead" style="font-size:13px;font-weight:500">岩・ブイ・サメはよけるかジャンプ。ぶつかると3秒へります。<br>操作：← → 移動 ／ ↑ ジャンプ ／ スペース ぬる</p>
+    <p class="lead" style="font-size:13px;font-weight:500">岩・ブイ・サメはよけるかジャンプ。ぶつかると3秒へります。<br>左の大波のカベは ← で登れる。てっぺんまで行くとエアリアル！<br>操作：← → 移動 ／ ↑ ジャンプ ／ スペース ぬる</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -252,6 +253,7 @@ body.touch #pad {
   const FINGER_NAMES = ['親指', '人さし指', '中指', 'くすり指', '小指'];
   const GAME_TIME = 90;
   const LANE = 7.5;
+  const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
 
   if ('ontouchstart' in window || matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
 
@@ -424,17 +426,18 @@ body.touch #pad {
   };
   const WAVE_GLSL = `
     uniform float uTime, uDist, uBig;
-    float wallH(float x) { float d = -x - 9.5; return d > 0.0 ? min(d * d * 0.085, 10.0) : 0.0; }
+    float wallH(float x) { float d = -x - 9.5; if (d <= 0.0) return 0.0; if (d < 10.8) return d * d * 0.085; return max(0.0, 9.9 - (d - 10.8) * (d - 10.8) * 0.5); }
+    float wallPart(float x, float z) { float zz = z - uDist; return wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.6); }
     float waveH(float x, float z) {
       float zz = z - uDist; float amp = 1.0 + uBig * 0.9;
       return amp * (0.55 * sin(zz * 0.22 + x * 0.12) + 0.3 * sin(zz * 0.09 - x * 0.35 + uTime * 0.9))
         + 0.15 * sin(x * 0.6 + zz * 0.5 + uTime * 1.7)
-        + wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.35);
+        + wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.6);
     }`;
   const ocean = new THREE.Mesh(oceanGeo, new THREE.ShaderMaterial({
     uniforms: oceanU,
     vertexShader: WAVE_GLSL + `
-      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall;
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase;
       void main() {
         vec3 p = position;
         float h = waveH(p.x, p.z);
@@ -442,13 +445,13 @@ body.touch #pad {
         float hx = waveH(p.x + e, p.z) - waveH(p.x - e, p.z);
         float hz = waveH(p.x, p.z + e) - waveH(p.x, p.z - e);
         vN = normalize(vec3(-hx, 2.0 * e, -hz));
-        p.y = h; vH = h; vWall = wallH(p.x);
+        p.y = h; vH = h; vWall = wallH(p.x); vBase = h - wallPart(p.x, p.z);
         vec4 w = modelMatrix * vec4(p, 1.0); vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: `
       uniform float uTime, uDist; uniform vec3 uSun, uFogC; uniform float uFogN, uFogF;
-      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall;
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -463,7 +466,7 @@ body.touch #pad {
         vec3 V = normalize(cameraPosition - vW);
         float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
         vec3 deep = vec3(0.01, 0.30, 0.50), shallow = vec3(0.06, 0.70, 0.78);
-        vec3 col = mix(deep, shallow, clamp((vH - vWall + 0.7) / 2.0, 0.0, 1.0));
+        vec3 col = mix(deep, shallow, clamp((vBase + 0.7) / 2.0, 0.0, 1.0));
         float wf = clamp(vWall / 9.0, 0.0, 1.0);
         col = mix(col, vec3(0.05, 0.62, 0.70), wf * 0.6);
         fres *= 1.0 - wf * 0.8;
@@ -472,7 +475,7 @@ body.touch #pad {
         vec3 Hh = normalize(uSun + V);
         col += vec3(1.0, 0.95, 0.82) * pow(max(dot(N, Hh), 0.0), 220.0) * 2.5;
         float fn = noise(uv * 2.6 + vec2(0.0, uTime * 0.4));
-        float foam = smoothstep(0.85, 1.4, vH - vWall * 1.1 + fn * 0.55);
+        float foam = smoothstep(0.85, 1.4, vBase + fn * 0.55);
         foam = max(foam, smoothstep(8.6, 10.2, vWall + fn * 1.2) * 0.9);
         foam = max(foam, smoothstep(0.8, 0.95, noise(uv * vec2(0.5, 0.22) + vec2(uTime * 0.03, 0.0))) * 0.4);
         col = mix(col, vec3(0.97, 0.99, 1.0), clamp(foam, 0.0, 1.0));
@@ -483,13 +486,13 @@ body.touch #pad {
   scene.add(ocean);
 
   let T = 0, dist = 0, bigAmt = 0;
-  function wall(x) { const d = -x - 9.5; return d > 0 ? Math.min(d * d * 0.085, 10) : 0; }
+  function wall(x) { const d = -x - 9.5; if (d <= 0) return 0; if (d < 10.8) return d * d * 0.085; return Math.max(0, 9.9 - (d - 10.8) * (d - 10.8) * 0.5); }
   function waveH(x, z) {
     const zz = z - dist;
     const amp = 1 + bigAmt * 0.9;
     return amp * (0.55 * Math.sin(zz * 0.22 + x * 0.12) + 0.3 * Math.sin(zz * 0.09 - x * 0.35 + T * 0.9))
       + 0.15 * Math.sin(x * 0.6 + zz * 0.5 + T * 1.7)
-      + wall(x) * (1 + 0.12 * Math.sin(zz * 0.05 + T) + bigAmt * 0.35);
+      + wall(x) * (1 + 0.12 * Math.sin(zz * 0.05 + T) + bigAmt * 0.6);
   }
   function updateOcean() {
     oceanU.uTime.value = T; oceanU.uDist.value = dist; oceanU.uBig.value = bigAmt;
@@ -768,7 +771,7 @@ body.touch #pad {
     const r = Math.random();
     if (n && !n.done && r < 0.6) ci = n.target;
     else ci = Math.floor(Math.random() * COLORS.length);
-    const x = rand(-LANE + 0.5, LANE - 0.5);
+    const x = bigAmt > 0.5 && Math.random() < 0.5 ? rand(-15.5, -11) : rand(-LANE + 0.5, LANE - 0.5);
     if (Math.random() < 0.25) { for (let k = 0; k < 3; k++) bottle(x, SPAWN_Z - k * 4, ci); }
     else bottle(x, SPAWN_Z, ci);
   }
@@ -779,7 +782,7 @@ body.touch #pad {
   let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
   let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
   let brush = null, nails = [], cur = 0, orderWait = 0;
-  let spillFlash = 0, lastWant = -1, camY = 0;
+  let spillFlash = 0, lastWant = -1, camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
   let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
   let nextBig = 20, bigLeft = 0;
   const keys = { left: false, right: false, paint: false };
@@ -803,7 +806,7 @@ body.touch #pad {
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; perfects = 0; ordersDone = 0; orderNo = 0;
     brush = null; orderWait = 0; obsTimer = 2.4; botTimer = 0.5; invuln = 0; shake = 0; drift = 0;
-    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0; dist = 0;
+    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0; dist = 0; aerialT = 0; rideAcc = 0;
     popQ.length = 0;
     newOrder();
   }
@@ -885,7 +888,7 @@ body.touch #pad {
     const wb = $('wobBar').firstElementChild;
     wb.style.width = (steady * 100) + '%';
     wb.style.background = steady > 0.72 ? '#35c08a' : steady > 0.45 ? '#ffc93c' : '#e8344a';
-    $('combo').textContent = combo >= 2 ? `${combo} コンボ!` : '';
+    $('combo').textContent = px < WALL_X && jumpY === 0 ? `波ライド中 +${bigAmt > 0.5 ? 80 : 40}/秒` : combo >= 2 ? `${combo} コンボ!` : '';
     const n = nails[cur];
     const wb2 = $('wantBig'), ws = $('wantState'), bp = $('bP');
     if (n && !n.done) {
@@ -1016,33 +1019,55 @@ body.touch #pad {
     let input = 0;
     if (playing) input = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     else if (state === 'title') input = clamp(Math.sin(T * 0.7) * 1.4 - px * 0.25, -1, 1);
-    const accel = (painting ? 30 : 44);
+    const accel = (painting ? 30 : 44) * (jumpY > 0 ? 0.25 : 1);
     vx += input * accel * dt;
     vx *= Math.pow(0.04, dt);
-    vx = clamp(vx, -11, 11);
+    // on the wave face gravity pulls you back down: hold ← to climb
+    if (px < WALL_X && jumpY === 0) {
+      const slope = (waveH(px + 0.3, 0) - waveH(px - 0.3, 0)) / 0.6;
+      vx -= slope * 10 * dt;
+    }
+    vx = clamp(vx, -12, 11);
     px += vx * dt;
-    if (px < -LANE) { px = -LANE; vx = Math.max(0, vx); }
+    if (px < MIN_X) { px = MIN_X; vx = Math.max(0, vx); }
+    // reach the lip with speed and you launch into an aerial
+    if (px > LIP_X + 4) aerialReady = true;
+    if (playing && aerialReady && jumpY === 0 && px < LIP_X && vx < -4) {
+      aerialReady = false;
+      vy = 12.5; jumpY = 0.01; vx = 4.8; aerialT = 0.001; sfx.jump(); beep(660, 0.4, 'triangle', 0.08, 2);
+      pop('エアリアル！', '#ffd23f');
+      for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), waveH(px, 0) + 0.3, rand(-1, 1), rand(-2, 4), rand(3, 9), rand(-2, 2));
+    }
     if (px > LANE) { px = LANE; vx = Math.min(0, vx); }
 
     if (jumpY > 0 || vy > 0) {
       vy -= 22 * dt; jumpY += vy * dt;
+      if (aerialT > 0) aerialT += dt;
+      if (jumpY <= 0 && aerialT > 0) {
+        const pts = Math.round(400 * (bigAmt > 0.5 ? 2 : 1));
+        score += pts; pop(`エアリアル成功！ +${pts}`, '#ffd23f'); sfx.order(); aerialT = 0;
+      }
       if (jumpY <= 0) { jumpY = 0; vy = 0; landJolt = 0.5; for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3)); }
     }
     landJolt = Math.max(0, landJolt - dt * 1.5);
 
     if (playing) {
       elapsed += dt; timeLeft -= dt;
+      if (px < WALL_X && jumpY === 0) {
+        rideAcc += dt * 40 * (bigAmt > 0.5 ? 2 : 1);
+        if (rideAcc >= 1) { score += Math.floor(rideAcc); rideAcc -= Math.floor(rideAcc); }
+      }
       const target = lerp(18, 30, clamp(elapsed / 100, 0, 1));
       speed += (target - speed) * Math.min(1, dt * 0.8);
-      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft <= 0) { $('big').hidden = true; nextBig = elapsed + rand(18, 24); } }
-      else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 7; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
+      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft < 4) $('big').hidden = true; if (bigLeft <= 0) nextBig = elapsed + rand(18, 24); }
+      else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 9; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
     } else speed += (16 - speed) * Math.min(1, dt);
     bigAmt += ((bigLeft > 0 ? 1 : 0) - bigAmt) * Math.min(1, dt * 1.2);
     dist += speed * dt;
 
     // how shaky the painting hand is
     const waveShake = bigAmt * (0.28 + 0.22 * Math.sin(T * 7));
-    const wTarget = clamp(Math.abs(vx) / 8 + Math.abs(input) * 0.12 + waveShake + landJolt + (invuln > 1 ? 0.6 : 0), 0, 1);
+    const wTarget = clamp(Math.abs(vx) / 8 + Math.abs(input) * 0.12 + waveShake + landJolt + (px < WALL_X ? 0.2 : 0) + (invuln > 1 ? 0.6 : 0), 0, 1);
     wob += (wTarget - wob) * Math.min(1, dt * 8);
     // the brush drifts off its line with body motion and shake; a steady hand pulls it back
     const driftTarget = vx * 1.5 + (Math.sin(T * 7.3) + Math.sin(T * 12.7 + 1.3)) * wob * 7;
@@ -1140,7 +1165,8 @@ body.touch #pad {
       camY += (sy - camY) * Math.min(1, dt * 6);
       camera.rotation.order = 'YXZ';
       camera.position.set(px + rand(-sh, sh) * 0.3, camY + 1.75 + jumpY + rand(-sh, sh) * 0.3, 0.35);
-      camera.rotation.set(-0.16 + Math.atan(dhz) * 0.3, -vx * 0.018, -vx * 0.02 + Math.atan(dhx) * 0.25);
+      const spin = aerialT > 0 ? Math.PI * 2 * clamp(aerialT / 1.0, 0, 1) : 0;
+      camera.rotation.set(-0.16 + Math.atan(dhz) * 0.3 - (aerialT > 0 ? 0.25 : 0), -vx * 0.018, -vx * 0.02 + Math.atan(dhx) * 0.25 + spin);
     }
     placeHands(dt);
 
