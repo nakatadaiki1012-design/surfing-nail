@@ -71,11 +71,18 @@ body {
 .bar > i { display: block; height: 100%; width: 0; background: #35c08a; }
 #combo { font-weight: 800; color: var(--coral); font-size: 11px; min-height: 1em; }
 
-#nailCard { padding: 5px 6px 6px; text-align: center; transition: border-color .15s, box-shadow .15s; }
+#nailCard { width: 120px; box-sizing: border-box; padding: 7px 8px 8px; text-align: center; transition: border-color .15s, box-shadow .15s; }
 #nailCard.warn { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a; animation: wiggle .25s; }
 @keyframes wiggle { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 #nailCard .bar { margin-top: 4px; }
-#nailCard .lbl { margin-top: 3px; display: block; }
+#nailCard .lbl { margin-top: 5px; display: block; }
+#nailCard .ttl { font-family: var(--display); font-size: 12px; }
+#nailHead { font-size: 14px !important; margin-top: 2px; }
+#zure {
+  position: fixed; left: 50%; bottom: 44%; transform: translateX(-50%); pointer-events: none;
+  font-family: var(--display); font-size: clamp(22px, 5vw, 34px); color: #ff3b5c; white-space: nowrap;
+  -webkit-text-stroke: 2px #fff; paint-order: stroke fill; text-shadow: 0 3px 0 rgba(21,48,74,.5);
+}
 #nailHead { font-weight: 800; font-size: 11px; white-space: nowrap; }
 #nailView { width: 104px; height: 130px; display: block; margin: 3px auto 0; border-radius: 8px; }
 
@@ -84,7 +91,7 @@ body {
 #hand { width: 136px; height: 106px; display: block; margin: 0 auto; }
 
 #pop {
-  position: fixed; left: 50%; top: 36%; transform: translate(-50%, -50%);
+  position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%);
   font-family: var(--display); font-size: clamp(20px, 5.4vw, 38px); color: #fff;
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
   text-shadow: 0 4px 0 var(--ink); pointer-events: none; white-space: nowrap;
@@ -92,7 +99,7 @@ body {
 }
 #pop.show { opacity: 1; transform: translate(-50%, -60%); }
 #hint {
-  position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(215px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
   background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
 }
@@ -177,14 +184,10 @@ body.touch #pad {
       <div id="combo"></div>
     </div>
     <div id="nailCard" class="card">
+      <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
       <div id="nailHead"><span id="fingerName">親指</span></div>
-      <canvas id="nailView"></canvas>
       <span class="lbl">手の安定</span>
       <div class="bar" id="wobBar"><i></i></div>
-    </div>
-    <div id="order" class="card">
-      <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
-      <canvas id="hand"></canvas>
     </div>
   </div>
   <div id="wantBig"><span id="wantBottle"></span><span>ほしい色</span><b id="wantName">ピンク</b><span id="wantState">をひろってね</span></div>
@@ -192,6 +195,7 @@ body.touch #pad {
 
 <div id="big" hidden>ビッグウェーブ！ スコア2倍</div>
 <div id="pop"></div>
+<div id="zure" hidden>ズレてる！</div>
 <div id="hint"></div>
 <div id="flash"></div>
 
@@ -337,7 +341,7 @@ body.touch #pad {
   $('stage').appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 500);
+  const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 500);
 
   function radialTex(inner, outer, size = 64) {
     const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
@@ -556,6 +560,123 @@ body.touch #pad {
     Object.assign(p, { life: life || rand(0.4, 0.9), x, y, z, vx, vy, vz });
   }
 
+  // =====================================================================
+  // First-person view: a 3D hand floats in front of the camera and the
+  // polish is painted straight onto its fingernails (canvas textures).
+  // =====================================================================
+  scene.add(camera);
+  const fpv = new THREE.Group(); camera.add(fpv);
+  const handG = new THREE.Group(); fpv.add(handG);
+  handG.rotation.x = 0.95;
+  const HSKIN = mat(0xeeb08c, { roughness: 0.5 });
+  const FING = [ // thumb, index, middle, ring, pinky (left hand, palm down: thumb on the right)
+    { x: 0.125, z: 0.06, len: 0.10, r: 0.025, yaw: -0.5 },
+    { x: 0.064, z: 0.0, len: 0.145, r: 0.021, yaw: -0.06 },
+    { x: 0.0, z: -0.006, len: 0.16, r: 0.022, yaw: 0 },
+    { x: -0.064, z: 0.0, len: 0.15, r: 0.021, yaw: 0.06 },
+    { x: -0.122, z: 0.018, len: 0.115, r: 0.018, yaw: 0.16 },
+  ];
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), HSKIN);
+  palm.scale.set(0.15, 0.032, 0.12); palm.position.set(0, -0.012, 0.1); handG.add(palm);
+  const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.08, 0.25, 24), HSKIN);
+  wrist.rotation.x = Math.PI / 2; wrist.scale.set(1, 1, 0.5); wrist.position.set(0, -0.015, 0.33); handG.add(wrist);
+  const bracelet = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.008, 8, 32), mat(0xffd23f, { metalness: 0.6, roughness: 0.25 }));
+  bracelet.scale.set(1, 0.5, 1); bracelet.position.set(0, -0.015, 0.27); handG.add(bracelet);
+
+  const disp = [];
+  FING.forEach((f, i) => {
+    const g = new THREE.Group(); g.position.set(f.x, 0, f.z); g.rotation.y = f.yaw; handG.add(g);
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(f.r * 1.1, f.r * 0.98, f.len, 24), HSKIN);
+    cyl.rotation.x = Math.PI / 2; cyl.position.z = -f.len / 2; g.add(cyl);
+    const tipS = new THREE.Mesh(new THREE.SphereGeometry(f.r, 24, 16), HSKIN); tipS.position.z = -f.len; g.add(tipS);
+    // nail patch wrapped over the top of the fingertip
+    const cv = document.createElement('canvas'); cv.width = NW; cv.height = NH;
+    const tex = new THREE.CanvasTexture(cv);
+    const k = (f.r * 1.45) / 60;            // metres per canvas pixel
+    const geo = new THREE.PlaneGeometry(1, 1, 20, 24);
+    const pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let j = 0; j < pos.count; j++) {
+      const u = uv.getX(j), v = uv.getY(j);
+      const cx = 34 + u * 92, cy = 170 - v * 140;
+      const a = (cx - 80) * k / f.r;
+      const rr2 = f.r + 0.0016;
+      pos.setXYZ(j, rr2 * Math.sin(a), rr2 * Math.cos(a), -f.len + 0.006 + (cy - 40) * k);
+      uv.setXY(j, cx / NW, 1 - cy / NH);
+    }
+    geo.computeVertexNormals();
+    const patch = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.18, metalness: 0.05, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    g.add(patch);
+    disp.push({ g, f, cv, ctx: cv.getContext('2d'), tex, k, dirty: true });
+  });
+  function nailPoint(i, cx, cy, lift) {
+    const d = disp[i], f = d.f, a = (cx - 80) * d.k / f.r, r = f.r + lift;
+    const p = new THREE.Vector3(r * Math.sin(a), r * Math.cos(a), -f.len + 0.006 + (cy - 40) * d.k);
+    d.g.updateMatrix(); return p.applyMatrix4(d.g.matrix);
+  }
+  function tintHex(hex, t) {
+    const b = [247, 221, 211], c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    return `rgb(${b.map((v, i) => Math.round(v + (c[i] - v) * t)).join(',')})`;
+  }
+  function renderNail(i) {
+    const d = disp[i], c = d.ctx, n = nails[i];
+    c.clearRect(0, 0, NW, NH);
+    c.fillStyle = n && !n.done ? tintHex(COLORS[n.target].hex, 0.4) : '#f7ddd3';
+    nailPath(c); c.fill();
+    if (n) {
+      c.drawImage(n.cv, 0, 0);
+      if (n.done) {
+        c.save(); nailPath(c); c.clip();
+        c.globalAlpha = 0.45; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(68, 80, 6, 24, -0.12, 0, Math.PI * 2); c.fill();
+        c.restore();
+      } else if (i === cur && state === 'play' && orderWait <= 0) {
+        for (let k = n.strokes; k < 3; k++) {
+          const L = LANES[k], isCur = k === n.lane;
+          c.setLineDash([6, 5]); c.lineWidth = isCur ? 4 : 2;
+          c.strokeStyle = isCur ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.5)';
+          c.beginPath(); c.moveTo(L.x, L.y0); c.lineTo(L.x, L.y1); c.stroke(); c.setLineDash([]);
+          if (isCur) { c.fillStyle = '#fff'; c.beginPath(); c.moveTo(L.x, L.y1 - 10); c.lineTo(L.x - 7, L.y1 + 1); c.lineTo(L.x + 7, L.y1 + 1); c.fill(); }
+        }
+        const pulse = 0.5 + 0.5 * Math.sin(T * 7);
+        c.lineWidth = 4; c.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.5})`; nailPath(c); c.stroke();
+      }
+    }
+    c.lineWidth = 1.5; c.strokeStyle = 'rgba(150,90,80,.45)'; nailPath(c); c.stroke();
+    d.tex.needsUpdate = true; d.dirty = false;
+  }
+  function updateNailTextures() {
+    disp.forEach((d, i) => { if (d.dirty || i === cur) renderNail(i); });
+  }
+  const markDirty = () => disp.forEach(d => { d.dirty = true; });
+
+  // the brush, held by the other hand; its tip sits at the origin
+  const brush3D = new THREE.Group(); handG.add(brush3D);
+  const bristleMat = mat(0xdddddd, { roughness: 0.25 });
+  const bristle = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.022, 0.005), bristleMat); bristle.position.y = 0.011; brush3D.add(bristle);
+  const ferrule = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.007, 0.018, 12), mat(0xc9d2da, { metalness: 0.8, roughness: 0.25 })); ferrule.position.y = 0.031; brush3D.add(ferrule);
+  const bHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0075, 0.3, 12), mat(0x15304a, { roughness: 0.2, metalness: 0.2 })); bHandle.position.y = 0.19; brush3D.add(bHandle);
+  const brushDir = new THREE.Vector3(0.45, 1, 0.75).normalize();
+  brush3D.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), brushDir);
+  let handX = 0;
+  function placeHands(dt) {
+    const portrait = camera.aspect < 1;
+    const n = nails[cur] && !nails[cur].done ? nails[cur] : null;
+    const fi = Math.min(cur, 4);
+    const nx = nailPoint(fi, 80, 90, 0).x;
+    handX += (-nx - handX) * Math.min(1, dt * 5);
+    const jitter = wob * 0.006;
+    handG.position.set(handX + Math.sin(T * 13) * jitter, (portrait ? -0.24 : -0.16) + Math.sin(T * 9.7) * jitter, portrait ? -0.9 : -0.46);
+    handG.rotation.z = Math.sin(T * 7) * wob * 0.03;
+    fpv.visible = state === 'play';
+    let p;
+    if (n && painting) p = nailPoint(fi, bx, by, 0.002);
+    else {
+      const L = LANES[n ? n.lane : 0];
+      p = nailPoint(fi, L.x + drift, L.y0 + 8, 0.02 + Math.sin(T * 3) * 0.004);
+    }
+    brush3D.position.copy(p);
+    bristleMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
+  }
+
   // ---------- entities ----------
   const G = {
     rock: new THREE.DodecahedronGeometry(1, 0),
@@ -658,7 +779,7 @@ body.touch #pad {
   let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
   let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
   let brush = null, nails = [], cur = 0, orderWait = 0;
-  let spillFlash = 0, lastWant = -1;
+  let spillFlash = 0, lastWant = -1, camY = 0;
   let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
   let nextBig = 20, bigLeft = 0;
   const keys = { left: false, right: false, paint: false };
@@ -672,6 +793,7 @@ body.touch #pad {
     else if (r < 0.7) { const a = pick(); let b = pick(); while (b === a) b = pick(); targets = [a, b, a, b, a]; }
     else { const s = COLORS.map((_, i) => i).sort(() => Math.random() - 0.5); targets = s.slice(0, 5); }
     nails = targets.map(makeNail);
+    if (typeof markDirty === 'function') markDirty();
     cur = 0;
     $('orderNo').textContent = orderNo;
   }
@@ -750,120 +872,8 @@ body.touch #pad {
     const r = cv.getBoundingClientRect(); const d = Math.min(devicePixelRatio, 2);
     cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
   }
-  const hand = $('hand'), hctx = hand.getContext('2d');
-  const view = $('nailView'), vctx = view.getContext('2d');
-
-  // brush position on the zoomed nail (for drawing)
+  // brush position on the nail canvas
   let bx = 80, by = 146;
-
-  function drawNailView() {
-    const c = vctx, s = view.width / NW;
-    c.setTransform(s, 0, 0, s, 0, 0);
-    c.fillStyle = '#fde9e4'; c.fillRect(0, 0, NW, NH);
-    const n = nails[cur] && !nails[cur].done ? nails[cur] : (nails[cur - 1] || nails[cur]);
-    // finger
-    c.fillStyle = '#f2c3a0'; c.strokeStyle = '#15304a'; c.lineWidth = 2;
-    rr(c, 30, 18, 100, 230, 50); c.fill(); c.stroke();
-    c.fillStyle = 'rgba(200,120,100,.25)'; c.beginPath(); c.ellipse(80, 152, 34, 12, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#f8e0d8'; nailPath(c); c.fill();
-    if (!n) return;
-    c.drawImage(n.cv, 0, 0);
-    c.lineWidth = 1.5; c.strokeStyle = 'rgba(150,90,80,.55)'; nailPath(c); c.stroke();
-    if (n.done) {
-      c.save(); nailPath(c); c.clip();
-      c.globalAlpha = 0.4; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(67, 82, 6, 26, -0.15, 0, Math.PI * 2); c.fill();
-      c.restore();
-      return;
-    }
-    // stroke guides
-    for (let k = 0; k < 3; k++) {
-      const L = LANES[k];
-      const isCur = k === n.lane;
-      if (k < n.strokes) continue;
-      c.setLineDash([4, 4]); c.lineWidth = isCur ? 2 : 1;
-      c.strokeStyle = isCur ? 'rgba(21,48,74,.8)' : 'rgba(21,48,74,.25)';
-      c.beginPath(); c.moveTo(L.x, L.y0); c.lineTo(L.x, L.y1); c.stroke(); c.setLineDash([]);
-      if (isCur) {
-        c.fillStyle = 'rgba(21,48,74,.8)';
-        c.beginPath(); c.moveTo(L.x, L.y1 - 8); c.lineTo(L.x - 5, L.y1); c.lineTo(L.x + 5, L.y1); c.fill();
-      }
-    }
-    // the brush
-    const L = LANES[n.lane];
-    const hx = painting ? bx : L.x + drift * 0.5;
-    const hy = painting ? by : L.y0 + 10 + Math.sin(T * 3) * 2;
-    const w = brushWidth();
-    c.save(); c.translate(hx, hy); c.rotate(clamp(drift * 0.02, -0.3, 0.3));
-    c.globalAlpha = painting ? 1 : 0.6;
-    c.fillStyle = '#15304a'; c.fillRect(-6, 14, 12, 60);           // handle
-    c.fillStyle = '#c9d2da'; c.fillRect(-w / 2 + 2, 4, w - 4, 11);   // ferrule
-    c.fillStyle = brush == null ? '#e4e4e4' : COLORS[brush].hex;    // bristles
-    rr(c, -w / 2, -5, w, 11, 4); c.fill();
-    c.strokeStyle = '#15304a'; c.lineWidth = 1.2; c.stroke();
-    c.restore();
-    // show how far the brush has slipped off its guide line
-    if (painting && Math.abs(drift) > 1.5) {
-      const dir = Math.sign(drift), y = by - 16;
-      c.strokeStyle = '#e8344a'; c.fillStyle = '#e8344a'; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(L.x, y); c.lineTo(bx, y); c.stroke();
-      c.beginPath(); c.moveTo(bx + dir * 6, y); c.lineTo(bx - dir * 2, y - 6); c.lineTo(bx - dir * 2, y + 6); c.fill();
-      c.font = '800 15px "M PLUS Rounded 1c", sans-serif'; c.textAlign = 'center';
-      c.lineWidth = 4; c.strokeStyle = '#fff'; c.strokeText('ズレ!', 80, 30); c.fillText('ズレ!', 80, 30);
-    }
-  }
-  function drawSparkles(c, x, y, w, h, count) {
-    c.save(); nailPath(c); c.clip();
-    for (let i = 0; i < count; i++) {
-      const sx = x + ((i * 37.7) % w), sy = y + ((i * 53.3 + T * 4) % h);
-      const a = 0.5 + 0.5 * Math.sin(T * 5 + i);
-      c.fillStyle = `rgba(255,248,210,${a})`; c.fillRect(sx, sy, 2, 2);
-    }
-    c.restore();
-  }
-
-  const FINGERS = [ // [cx, tipY, w, angle]  thumb, index, middle, ring, pinky
-    [40, 52, 20, -0.55], [62, 18, 18, -0.06], [84, 10, 18, 0], [106, 16, 18, 0.06], [126, 32, 16, 0.14],
-  ];
-  function drawHand() {
-    const c = hctx, s = hand.width / 164;
-    c.setTransform(s, 0, 0, s, 0, 0); c.clearRect(0, 0, 164, 128);
-    c.lineWidth = 2; c.strokeStyle = '#15304a';
-    c.fillStyle = '#f2c3a0';
-    rr(c, 50, 62, 88, 80, 22); c.fill(); c.stroke();
-    FINGERS.forEach(([cx, ty, w, a], i) => {
-      c.save(); c.translate(cx, 92); c.rotate(a);
-      const len = 92 - ty;
-      c.fillStyle = '#f2c3a0'; rr(c, -w / 2, -len, w, len + 6, w / 2); c.fill(); c.stroke();
-      const n = nails[i]; const nw = w - 6, nh = 17, nx = -nw / 2, ny = -len + 3;
-      // show the real painted pixels, spill included, shrunk onto the fingertip
-      const kx = nw / 60, ky = nh / 108;
-      c.save(); rr(c, -w / 2 + 1, -len + 1, w - 2, nh + 8, w / 2); c.clip();
-      c.fillStyle = '#f8e3da'; rr(c, nx, ny, nw, nh, nw / 2); c.fill();
-      if (n && !n.done) { c.globalAlpha = 0.45; c.fillStyle = COLORS[n.target].hex; rr(c, nx, ny, nw, nh, nw / 2); c.fill(); c.globalAlpha = 1; }
-      if (n) c.drawImage(n.cv, 50 - 4 / kx, 40 - 3 / ky, (nw + 8) / kx, (nh + 8) / ky, nx - 4, ny - 3, nw + 8, nh + 8);
-      c.restore();
-      if (n) {
-        c.setLineDash(n.done ? [] : [3, 2]); c.lineWidth = 2.2; c.strokeStyle = COLORS[n.target].hex;
-        rr(c, nx, ny, nw, nh, nw / 2); c.stroke(); c.setLineDash([]);
-        if (i === cur && !n.done && state === 'play') {
-          const pulse = 0.5 + 0.5 * Math.sin(T * 8);
-          c.lineWidth = 1.5; c.strokeStyle = `rgba(21,48,74,${0.4 + pulse * 0.6})`; rr(c, nx - 3, ny - 3, nw + 6, nh + 6, nw / 2 + 3); c.stroke();
-        }
-        if (n.done) {
-          const ok = n.result === 'perfect' || n.result === 'good';
-          c.fillStyle = n.result === 'perfect' ? '#ffb400' : ok ? '#2fb57a' : '#e8344a';
-          c.beginPath(); c.arc(0, ny - 6, 5, 0, 7); c.fill();
-          c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.beginPath();
-          if (ok) { c.moveTo(-2.4, ny - 6); c.lineTo(-0.6, ny - 4.2); c.lineTo(2.6, ny - 8); }
-          else { c.moveTo(-2, ny - 8); c.lineTo(2, ny - 4); c.moveTo(2, ny - 8); c.lineTo(-2, ny - 4); }
-          c.stroke();
-        }
-      }
-      c.lineWidth = 2; c.strokeStyle = '#15304a';
-      c.restore();
-    });
-    c.fillStyle = '#f2c3a0'; c.fillRect(52, 90, 84, 12);
-  }
 
   function updateHUD() {
     $('score').textContent = score.toLocaleString();
@@ -893,13 +903,14 @@ body.touch #pad {
       $('fingerName').textContent = 'お会計中'; ws.textContent = 'つぎのお客さん…'; ws.className = '';
     }
     $('nailCard').classList.toggle('warn', spillFlash > 0);
+    $('zure').hidden = !(painting && Math.abs(drift) > 1.8);
+    if (!$('zure').hidden) $('zure').textContent = drift > 0 ? 'ズレてる！ →' : '← ズレてる！';
     nails.forEach((nn, i) => {
       if (nn.used != null) nail3D[i].material.color.set(COLORS[nn.used].hex);
       else nail3D[i].material.color.set(0xf3d9cf);
     });
     brushTipMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
-    drawHand();
-    drawNailView();
+    updateNailTextures();
   }
 
   // ---------- gameplay ----------
@@ -922,6 +933,7 @@ body.touch #pad {
     const pts = Math.round(base * (1 + Math.min(combo, 10) * 0.1) * (bigAmt > 0.5 ? 2 : 1));
     score += pts;
     pop(`${label} +${pts}`, col);
+    disp[cur].dirty = true;
     cur++;
     if (cur >= 5) finishOrder();
   }
@@ -975,7 +987,7 @@ body.touch #pad {
     timeLeft -= 3; sfx.hit(); flash();
     const n = nails[cur];
     let msg = 'ドボン！ -3秒';
-    if (n && !n.done && (n.sp > 0 || n.strokes > 0) && n.used != null) { smear(n, n.used); n.sp = 0; msg = 'ぶつかって はみだした！ -3秒'; }
+    if (n && !n.done && (n.sp > 0 || n.strokes > 0) && n.used != null) { smear(n, n.used); n.sp = 0; disp[cur].dirty = true; msg = 'ぶつかって はみだした！ -3秒'; }
     pop(msg, '#ffd0dc');
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
@@ -1060,7 +1072,8 @@ body.touch #pad {
     rider.rotation.y = Math.PI * 0.02;
     rider.rotation.z = -Math.abs(vx) * 0.01;
     rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02 - (painting ? 0.08 : 0);
-    surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
+    surfer.visible = true; rider.visible = state === 'title';
+    shadow.visible = state === 'title';
 
     armL.pivot.rotation.set(0, 0.55, -0.35);
     if (painting) {
@@ -1120,8 +1133,16 @@ body.touch #pad {
 
     shake = Math.max(0, shake - dt);
     const sh = shake * 0.5 + bigAmt * 0.06;
-    camera.position.set(px * 0.55 + 1.2 + rand(-sh, sh), sy * 0.6 + 3.9 + jumpY * 0.4 + rand(-sh, sh), 7.4);
-    camera.lookAt(px * 0.75, sy * 0.5 + 1.2, -9);
+    if (state === 'title') {
+      camera.position.set(px * 0.55 + 1.2, sy * 0.6 + 3.9, 7.4);
+      camera.rotation.set(0, 0, 0); camera.lookAt(px * 0.75, sy * 0.5 + 1.2, -9);
+    } else {
+      camY += (sy - camY) * Math.min(1, dt * 6);
+      camera.rotation.order = 'YXZ';
+      camera.position.set(px + rand(-sh, sh) * 0.3, camY + 1.75 + jumpY + rand(-sh, sh) * 0.3, 0.35);
+      camera.rotation.set(-0.16 + Math.atan(dhz) * 0.3, -vx * 0.018, -vx * 0.02 + Math.atan(dhx) * 0.25);
+    }
+    placeHands(dt);
 
     spillFlash = Math.max(0, spillFlash - dt);
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
@@ -1171,7 +1192,7 @@ body.touch #pad {
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
     $('hud').hidden = false;
-    fitCanvas(hand); fitCanvas(view); updateHUD();
+    updateHUD();
     pop('お客さんが来たよ！', '#ffffff');
   }
   $('startBtn').addEventListener('click', start);
@@ -1180,7 +1201,6 @@ body.touch #pad {
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-    fitCanvas(hand); fitCanvas(view);
   });
 
 
