@@ -110,6 +110,17 @@ body {
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
 #big small { font-size: .55em; color: #fff; }
+#doneBtn {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--display); font-size: 20px; color: #fff; background: #b9c3cc; border: 2px solid var(--ink);
+  border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; touch-action: none;
+}
+#doneBtn.ready { background: #2fb57a; }
+#doneBtn:active { transform: translate(-50%, 3px); box-shadow: 0 1px 0 var(--ink); }
+#help {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  font-size: 12px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: none; white-space: nowrap;
+}
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
 
 /* touch controls */
@@ -127,9 +138,6 @@ body.touch #pad {
   box-shadow: 0 4px 0 var(--ink); width: 70px; height: 70px; font-size: 22px; touch-action: none;
 }
 #pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); background: #fff; }
-#bP { width: 88px !important; height: 88px !important; background: #b9c3cc !important; color: #fff !important; font-size: 20px !important; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
-#bP.ready { background: var(--want, var(--coral)) !important; }
-#bP small { display: block; font-size: 11px; -webkit-text-stroke: 0; color: var(--ink); }
 #bJ { font-size: 13px !important; white-space: nowrap; }
 
 /* overlays */
@@ -199,10 +207,12 @@ body.touch #pad {
 <div id="zure" hidden>ズレてる！</div>
 <div id="hint"></div>
 <div id="flash"></div>
+<button id="doneBtn" hidden>できた！</button>
+<div id="help" hidden>画面をドラッグしてハケを動かそう</div>
 
 <div id="pad">
   <div class="grp"><button id="bL" aria-label="左へ">◀</button><button id="bR" aria-label="右へ">▶</button></div>
-  <div class="grp"><button id="bJ">ジャンプ</button><button id="bP">ぬる</button></div>
+  <div class="grp"><button id="bJ">ジャンプ</button></div>
 </div>
 
 <div id="title" class="overlay">
@@ -211,10 +221,10 @@ body.touch #pad {
     <p class="lead">波に乗りながら、お客さんのネイルを仕上げよう</p>
     <div class="how">
       <div><kbd>1</kbd><span>上の<b>ご注文と同じ色のボトル</b>をひろう</span></div>
-      <div><kbd>2</kbd><span><b>ぬるボタンを長押し</b>でツメをぬる</span></div>
+      <div><kbd>2</kbd><span><b>画面をドラッグ</b>して、ハケを動かして自分でぬる</span></div>
       <div><kbd>3</kbd><span>ぬっている間は<b>じっとする</b>ときれいに仕上がる</span></div>
     </div>
-    <p class="lead" style="font-size:13px;font-weight:500">岩・ブイ・サメはよけるかジャンプ。ぶつかると3秒へります。<br>左の大波のカベは ← で登れる。てっぺんまで行くとエアリアル！<br>操作：← → 移動 ／ ↑ ジャンプ ／ スペース ぬる</p>
+    <p class="lead" style="font-size:13px;font-weight:500">岩・ブイ・サメはよけるかジャンプ。ぶつかると3秒へります。<br>左の大波のカベは ← で登れる。てっぺんまで行くとエアリアル！<br>操作：← → 移動 ／ ↑ ジャンプ ／ マウスでドラッグ ぬる ／ Enter できた</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -736,7 +746,7 @@ body.touch #pad {
     const pos = geo.attributes.position, uv = geo.attributes.uv;
     for (let j = 0; j < pos.count; j++) {
       const u = uv.getX(j), v = uv.getY(j);
-      const cx = 38 + u * 84, cy = 160 - v * 128;
+      const cx = 24 + u * 112, cy = 174 - v * 152;
       const p = nailSurface(fr, k, cx, cy, 0.0016);
       pos.setXYZ(j, p.x, p.y, p.z);
       uv.setXY(j, cx / NW, 1 - cy / NH);
@@ -764,15 +774,8 @@ body.touch #pad {
         c.globalAlpha = 0.45; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(68, 80, 6, 24, -0.12, 0, Math.PI * 2); c.fill();
         c.restore();
       } else if (i === cur && state === 'play' && orderWait <= 0) {
-        for (let k = n.strokes; k < 3; k++) {
-          const L = LANES[k], isCur = k === n.lane;
-          c.setLineDash([6, 5]); c.lineWidth = isCur ? 4 : 2;
-          c.strokeStyle = isCur ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.5)';
-          c.beginPath(); c.moveTo(L.x, L.y0); c.lineTo(L.x, L.y1); c.stroke(); c.setLineDash([]);
-          if (isCur) { c.fillStyle = '#fff'; c.beginPath(); c.moveTo(L.x, L.y1 - 10); c.lineTo(L.x - 7, L.y1 + 1); c.lineTo(L.x + 7, L.y1 + 1); c.fill(); }
-        }
         const pulse = 0.5 + 0.5 * Math.sin(T * 7);
-        c.lineWidth = 4; c.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.5})`; nailPath(c); c.stroke();
+        if (!painting) { c.lineWidth = 4; c.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.5})`; nailPath(c); c.stroke(); }
       }
     }
     c.lineWidth = 1.5; c.strokeStyle = 'rgba(150,90,80,.45)'; nailPath(c); c.stroke();
@@ -803,11 +806,7 @@ body.touch #pad {
     handG.rotation.z = Math.sin(T * 7) * wob * 0.03;
     fpv.visible = state === 'play';
     let p;
-    if (n && painting) p = nailPoint(fi, bx, by, 0.002);
-    else {
-      const L = LANES[n ? n.lane : 0];
-      p = nailPoint(fi, L.x + drift, L.y0 + 8, 0.02 + Math.sin(T * 3) * 0.004);
-    }
+    p = nailPoint(fi, brushX(), brushY(), painting ? 0.001 : (ptr.down ? 0.006 : 0.016 + Math.sin(T * 3) * 0.003));
     brush3D.position.copy(p);
     bristleMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
   }
@@ -914,6 +913,7 @@ body.touch #pad {
   let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
   let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
   let brush = null, nails = [], cur = 0, orderWait = 0;
+  let driftY = 0;
   let spillFlash = 0, lastWant = -1, camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
   let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
   let nextBig = 20, bigLeft = 0;
@@ -929,7 +929,7 @@ body.touch #pad {
     else { const s = COLORS.map((_, i) => i).sort(() => Math.random() - 0.5); targets = s.slice(0, 5); }
     nails = targets.map(makeNail);
     if (typeof markDirty === 'function') markDirty();
-    cur = 0;
+    cur = 0; bx = 80; by = 138;
     $('orderNo').textContent = orderNo;
   }
 
@@ -1022,7 +1022,7 @@ body.touch #pad {
     wb.style.background = steady > 0.72 ? '#35c08a' : steady > 0.45 ? '#ffc93c' : '#e8344a';
     $('combo').textContent = px < WALL_X && jumpY === 0 ? `波ライド中 +${bigAmt > 0.5 ? 80 : 40}/秒` : combo >= 2 ? `${combo} コンボ!` : '';
     const n = nails[cur];
-    const wb2 = $('wantBig'), ws = $('wantState'), bp = $('bP');
+    const wb2 = $('wantBig'), ws = $('wantState'), bp = $('doneBtn');
     if (n && !n.done) {
       const col = COLORS[n.target].hex;
       const w = $('wantName'); w.textContent = COLORS[n.target].name; w.style.background = col;
@@ -1031,9 +1031,8 @@ body.touch #pad {
       const ok = brush === n.target;
       ws.textContent = ok ? '✓ ぬれるよ！' : 'のボトルをひろおう';
       ws.className = ok ? 'ok' : 'ng';
-      bp.classList.toggle('ready', ok); bp.style.setProperty('--want', col);
-      if (bp.dataset.ok !== String(ok)) { bp.dataset.ok = String(ok); bp.innerHTML = ok ? 'ぬる' : 'ぬる<small>色ちがい</small>'; }
-      $('fingerName').textContent = `${FINGER_NAMES[cur]} ${n.strokes + 1}/3`;
+      $('fingerName').textContent = `${FINGER_NAMES[cur]} ${Math.round(n.cov * 100)}%`;
+      bp.classList.toggle('ready', n.cov >= 0.8);
     } else if (orderWait > 0) {
       $('fingerName').textContent = 'お会計中'; ws.textContent = 'つぎのお客さん…'; ws.className = '';
     }
@@ -1062,14 +1061,15 @@ body.touch #pad {
     n.done = true; n.sp = 0;
     const { cov, spill } = n;
     let base, label, col;
-    if (cov >= 0.86 && spill <= 0.03) { n.result = 'perfect'; base = 300; combo++; perfects++; label = 'パーフェクト！'; col = '#ffd23f'; sfx.perfect(); }
-    else if (cov >= 0.75 && spill <= 0.08) { n.result = 'good'; base = 150; combo++; label = 'グッド'; col = '#ffffff'; sfx.good(); }
+    if (cov >= 0.86 && spill <= 0.04) { n.result = 'perfect'; base = 300; combo++; perfects++; label = 'パーフェクト！'; col = '#ffd23f'; sfx.perfect(); }
+    else if (cov >= 0.75 && spill <= 0.1) { n.result = 'good'; base = 150; combo++; label = 'グッド'; col = '#ffffff'; sfx.good(); }
     else { n.result = 'messy'; base = 50; combo = 0; label = 'はみだし…'; col = '#ffd0dc'; sfx.bad(); }
     const pts = Math.round(base * (1 + Math.min(combo, 10) * 0.1) * (bigAmt > 0.5 ? 2 : 1));
     score += pts;
     pop(`${label} +${pts}`, col);
     disp[cur].dirty = true;
     cur++;
+    resetBrush(); ptr.down = false;
     if (cur >= 5) finishOrder();
   }
 
@@ -1082,39 +1082,46 @@ body.touch #pad {
     orderWait = 1.8;
   }
 
+  // the player's own stroke: drag to move the brush; body motion and waves push it off
+  const ptr = { down: false, id: null, x: 0, y: 0 };
+  let lastPX = 0, lastPY = 0;
+  const brushX = () => clamp(bx + drift, 24, 136);
+  const brushY = () => clamp(by + driftY, 22, 176);
+  function resetBrush() { bx = 80; by = 138; }
   function doPaint(dt) {
     const was = painting;
     painting = false;
-    if (!keys.paint || orderWait > 0) { if (was) setBrushSound(false); return; }
-    const n = nails[cur]; if (!n || n.done) return;
+    const n = nails[cur];
+    if (!ptr.down || orderWait > 0 || !n || n.done) { if (was) setBrushSound(false); return; }
     if (jumpY > 0.05) { hint('空中ではぬれないよ'); setBrushSound(false); return; }
     if (brush !== n.target) { hint(`「${COLORS[n.target].name}」のボトルをひろってね`); setBrushSound(false); return; }
     painting = true;
-    if (!was) setBrushSound(true);
     n.used = brush;
-    const L = LANES[n.lane];
-    const prevY = lerp(L.y0, L.y1, n.sp), prevX = L.x + drift;
-    n.sp = Math.min(1, n.sp + dt * 1.45);
-    by = lerp(L.y0, L.y1, n.sp);
-    bx = L.x + drift;
-    const steps = Math.max(1, Math.ceil(Math.abs(prevY - by) / 1.5));
+    const x = brushX(), y = brushY();
+    if (!was) { setBrushSound(true); lastPX = x; lastPY = y; }
+    const steps = Math.max(1, Math.ceil(Math.hypot(x - lastPX, y - lastPY) / 1.5));
     for (let k = 1; k <= steps; k++) {
       const t = k / steps;
-      dab(n, lerp(prevX, bx, t), lerp(prevY, by, t), BRUSH_W, brush, 0.5);
+      dab(n, lerp(lastPX, x, t), lerp(lastPY, y, t), BRUSH_W, brush, 0.35);
     }
+    lastPX = x; lastPY = y;
     n.evalT -= dt;
     if (n.evalT <= 0) {
       const before = n.spill; evalNail(n); n.evalT = 0.12;
       if (n.spill > before + 0.002) {
         spillFlash = 0.35;
-        hint(keys.left || keys.right ? '←→で動くと ハケがズレて はみだす！' : 'ゆれで ハケがズレた！ じっとして');
+        if (Math.abs(drift) > 1.8) hint(keys.left || keys.right ? '←→で動くと ハケがズレて はみだす！' : 'ゆれで ハケがズレた！ じっとして');
+        else hint('ツメの外にはみ出してるよ！');
       }
+      if (n.cov >= 0.94) { finishNail(); setBrushSound(false); painting = false; }
     }
-    if (n.sp >= 1) {
-      n.strokes++; n.sp = 0; sfx.stroke();
-      if (n.strokes >= 3) { finishNail(); setBrushSound(false); painting = false; return; }
-      n.lane = n.strokes;
-    }
+  }
+  function finishByPlayer() {
+    const n = nails[cur];
+    if (state !== 'play' || orderWait > 0 || !n || n.done) return;
+    evalNail(n);
+    if (n.cov < 0.3) { hint('まだほとんどぬれてないよ'); return; }
+    finishNail(); setBrushSound(false); painting = false;
   }
 
   function onHit() {
@@ -1122,7 +1129,7 @@ body.touch #pad {
     timeLeft -= 3; sfx.hit(); flash();
     const n = nails[cur];
     let msg = 'ドボン！ -3秒';
-    if (n && !n.done && (n.sp > 0 || n.strokes > 0) && n.used != null) { smear(n, n.used); n.sp = 0; disp[cur].dirty = true; msg = 'ぶつかって はみだした！ -3秒'; }
+    if (n && !n.done && n.used != null) { smear(n, n.used); n.sp = 0; disp[cur].dirty = true; msg = 'ぶつかって はみだした！ -3秒'; }
     pop(msg, '#ffd0dc');
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
@@ -1139,7 +1146,8 @@ body.touch #pad {
     $('rOrders').textContent = ordersDone + ' 人';
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true;
-    keys.paint = keys.left = keys.right = false;
+    keys.left = keys.right = false; ptr.down = false;
+    $('doneBtn').hidden = true; $('help').hidden = true;
     document.querySelectorAll('#pad button').forEach(b => b.classList.remove('on'));
     setTimeout(() => $('retryBtn').focus(), 50);
   }
@@ -1204,6 +1212,7 @@ body.touch #pad {
     // the brush drifts off its line with body motion and shake; a steady hand pulls it back
     const driftTarget = vx * 1.5 + (Math.sin(T * 7.3) + Math.sin(T * 12.7 + 1.3)) * wob * 7;
     drift += (driftTarget - drift) * Math.min(1, dt * 6);
+    driftY += ((Math.sin(T * 9.1) + Math.sin(T * 5.3 + 2)) * wob * 5 - driftY) * Math.min(1, dt * 6);
 
     if (playing) {
       if (orderWait > 0) { orderWait -= dt; if (orderWait <= 0) newOrder(); }
@@ -1252,7 +1261,7 @@ body.touch #pad {
       if (e.kind === 'bottle') {
         e.body.rotation.y += dt * 2.4;
         const want = playing && orderWait <= 0 && nails[cur] && !nails[cur].done && nails[cur].target === e.color && brush !== e.color;
-        e.pillar.visible = e.arrow.visible = want;
+        e.pillar.visible = want && e.z < -18; e.arrow.visible = want && e.z < -4;
         e.arrow.position.y = 2.3 + Math.sin(T * 6 + e.phase) * 0.25; e.arrow.rotation.y += dt * 3;
         const sc = want ? 1.45 + Math.sin(T * 8) * 0.08 : 1.0;
         e.mesh.scale.setScalar(sc);
@@ -1323,16 +1332,14 @@ body.touch #pad {
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
     if ((k === 'ArrowUp' || k === 'w' || k === 'W') && !e.repeat) jump();
-    if (k === ' ' || k === 'j' || k === 'J') keys.paint = true;
-    if (k === 'Enter' && state !== 'play') start();
+    if (k === 'Enter' || k === ' ') { if (state === 'play') finishByPlayer(); else if (k === 'Enter') start(); }
   });
   addEventListener('keyup', e => {
     const k = e.key;
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
-    if (k === ' ' || k === 'j' || k === 'J') keys.paint = false;
   });
-  addEventListener('blur', () => { keys.left = keys.right = keys.paint = false; });
+  addEventListener('blur', () => { keys.left = keys.right = false; ptr.down = false; });
 
   function bindHold(id, key, onDown) {
     const b = $(id);
@@ -1342,14 +1349,32 @@ body.touch #pad {
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => b.addEventListener(t, up));
     b.addEventListener('contextmenu', e => e.preventDefault());
   }
-  bindHold('bL', 'left'); bindHold('bR', 'right'); bindHold('bP', 'paint'); bindHold('bJ', null, jump);
+  bindHold('bL', 'left'); bindHold('bR', 'right'); bindHold('bJ', null, jump);
+  $('doneBtn').addEventListener('pointerdown', e => { e.preventDefault(); finishByPlayer(); });
+  // drag on the scene to move the brush (relative, so a finger never hides the nail)
+  const stageEl = $('stage');
+  stageEl.addEventListener('pointerdown', e => {
+    if (state !== 'play' || ptr.down) return;
+    ptr.down = true; ptr.id = e.pointerId; ptr.x = e.clientX; ptr.y = e.clientY;
+    try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
+    $('help').hidden = true;
+  });
+  stageEl.addEventListener('pointermove', e => {
+    if (!ptr.down || e.pointerId !== ptr.id) return;
+    const sens = 120 / (0.38 * Math.min(innerWidth, innerHeight));
+    bx = clamp(bx + (e.clientX - ptr.x) * sens, 24, 136);
+    by = clamp(by + (e.clientY - ptr.y) * sens, 22, 176);
+    ptr.x = e.clientX; ptr.y = e.clientY;
+  });
+  const ptrUp = e => { if (e.pointerId === ptr.id) { ptr.down = false; ptr.id = null; } };
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stageEl.addEventListener(t, ptrUp));
 
   function start() {
     try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
     resetGame();
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
-    $('hud').hidden = false;
+    $('hud').hidden = false; $('doneBtn').hidden = false; $('help').hidden = false;
     updateHUD();
     pop('お客さんが来たよ！', '#ffffff');
   }
