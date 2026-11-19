@@ -33,8 +33,28 @@ body {
   position: fixed; left: 0; right: 0;
   top: calc(8px + env(safe-area-inset-top, 0px));
   padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
-  display: flex; justify-content: center; align-items: flex-start; gap: 8px; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
 }
+#hudRow { display: flex; justify-content: center; align-items: flex-start; gap: 8px; }
+#wantBig {
+  display: flex; align-items: center; gap: 8px; padding: 5px 14px 5px 8px;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
+  font-weight: 800; font-size: 13px; white-space: nowrap;
+}
+#wantBig.bump { animation: bump .5s ease-out; }
+@keyframes bump { 0% { transform: scale(1.35); } 60% { transform: scale(.95); } 100% { transform: scale(1); } }
+#wantBottle {
+  width: 18px; height: 22px; border-radius: 5px 5px 7px 7px; border: 2px solid var(--ink); position: relative; margin-top: 10px; flex: none;
+}
+#wantBottle::before { content: ""; position: absolute; left: 3px; right: 3px; top: -12px; height: 10px; background: var(--ink); border-radius: 3px; }
+#wantBottle::after { content: ""; position: absolute; left: 3px; top: 3px; width: 4px; height: 8px; border-radius: 3px; background: rgba(255,255,255,.7); }
+#wantName {
+  font-family: var(--display); font-weight: 400; font-size: 20px; padding: 1px 14px; border-radius: 999px;
+  color: #fff; border: 2px solid var(--ink); -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill;
+}
+#wantState { font-size: 12px; }
+#wantState.ok { color: #1f9a63; }
+#wantState.ng { color: #d62a48; }
 #status { width: 132px; padding: 8px 10px; display: grid; gap: 4px; font-size: 12px; box-sizing: border-box; }
 #status .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 #score { font-family: var(--display); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -51,15 +71,17 @@ body {
 .bar > i { display: block; height: 100%; width: 0; background: #35c08a; }
 #combo { font-weight: 800; color: var(--coral); font-size: 11px; min-height: 1em; }
 
-#nailCard { padding: 5px 6px 6px; text-align: center; }
+#nailCard { padding: 5px 6px 6px; text-align: center; transition: border-color .15s, box-shadow .15s; }
+#nailCard.warn { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a; animation: wiggle .25s; }
+@keyframes wiggle { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+#nailCard .bar { margin-top: 4px; }
+#nailCard .lbl { margin-top: 3px; display: block; }
 #nailHead { font-weight: 800; font-size: 11px; white-space: nowrap; }
-#nailView { width: 80px; height: 100px; display: block; margin: 3px auto 0; border-radius: 8px; }
+#nailView { width: 104px; height: 130px; display: block; margin: 3px auto 0; border-radius: 8px; }
 
 #order { width: 150px; padding: 6px 6px 8px; text-align: center; box-sizing: border-box; }
 #order .ttl { font-family: var(--display); font-size: 12px; letter-spacing: .05em; }
 #hand { width: 136px; height: 106px; display: block; margin: 0 auto; }
-#want { font-size: 12px; font-weight: 800; }
-#want b { padding: 1px 8px; border-radius: 999px; color: #fff; border: 1.5px solid var(--ink); }
 
 #pop {
   position: fixed; left: 50%; top: 36%; transform: translate(-50%, -50%);
@@ -97,7 +119,9 @@ body.touch #pad {
   box-shadow: 0 4px 0 var(--ink); width: 70px; height: 70px; font-size: 22px; touch-action: none;
 }
 #pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); background: #fff; }
-#bP { width: 88px !important; height: 88px !important; background: var(--coral) !important; color: #fff !important; font-size: 20px !important; }
+#bP { width: 88px !important; height: 88px !important; background: #b9c3cc !important; color: #fff !important; font-size: 20px !important; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
+#bP.ready { background: var(--want, var(--coral)) !important; }
+#bP small { display: block; font-size: 11px; -webkit-text-stroke: 0; color: var(--ink); }
 #bJ { font-size: 13px !important; white-space: nowrap; }
 
 /* overlays */
@@ -133,7 +157,8 @@ body.touch #pad {
   #hud { gap: 5px; }
   #status { width: 112px; padding: 6px 8px; }
   #score { font-size: 18px; }
-  #nailView { width: 68px; height: 85px; }
+  #nailView { width: 76px; height: 95px; }
+  #wantName { font-size: 17px; }
   #order { width: 128px; }
   #hand { width: 116px; height: 90px; }
 }
@@ -143,22 +168,26 @@ body.touch #pad {
 <div id="stage"></div>
 
 <div id="hud" hidden>
-  <div id="status" class="card">
-    <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
-    <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
-    <div id="brushRow"><span id="swatch"></span><span id="brushName">なし</span></div>
-    <div><div class="lbl">手の安定</div><div class="bar" id="wobBar"><i></i></div></div>
-    <div id="combo"></div>
+  <div id="hudRow">
+    <div id="status" class="card">
+      <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
+      <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
+      <div class="lbl">いまのハケ</div>
+      <div id="brushRow"><span id="swatch"></span><span id="brushName">なし</span></div>
+      <div id="combo"></div>
+    </div>
+    <div id="nailCard" class="card">
+      <div id="nailHead"><span id="fingerName">親指</span></div>
+      <canvas id="nailView"></canvas>
+      <span class="lbl">手の安定</span>
+      <div class="bar" id="wobBar"><i></i></div>
+    </div>
+    <div id="order" class="card">
+      <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
+      <canvas id="hand"></canvas>
+    </div>
   </div>
-  <div id="nailCard" class="card">
-    <div id="nailHead"><span id="fingerName">親指</span></div>
-    <canvas id="nailView"></canvas>
-  </div>
-  <div id="order" class="card">
-    <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
-    <canvas id="hand"></canvas>
-    <div id="want">ほしい色 <b id="wantName">ピンク</b></div>
-  </div>
+  <div id="wantBig"><span id="wantBottle"></span><span>ほしい色</span><b id="wantName">ピンク</b><span id="wantState">をひろってね</span></div>
 </div>
 
 <div id="big" hidden>ビッグウェーブ！ スコア2倍</div>
@@ -282,7 +311,7 @@ body.touch #pad {
 
   function makeNail(target) {
     const cv = document.createElement('canvas'); cv.width = NW; cv.height = NH;
-    return { target, cv, ctx: cv.getContext('2d'), strokes: 0, sp: 0, lane: 0, cov: 0, spill: 0, wrong: 0, bandCov: [0, 0, 0],
+    return { target, cv, ctx: cv.getContext('2d', { willReadFrequently: true }), strokes: 0, sp: 0, lane: 0, cov: 0, spill: 0, wrong: 0, bandCov: [0, 0, 0],
       done: false, result: null, wet: 0, smudged: false, glitter: false, used: null, evalT: 0 };
   }
 
@@ -310,43 +339,144 @@ body.touch #pad {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 500);
 
-  const skyC = document.createElement('canvas'); skyC.width = 2; skyC.height = 256;
+  function radialTex(inner, outer, size = 64) {
+    const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    gr.addColorStop(0, inner); gr.addColorStop(1, outer); g.fillStyle = gr; g.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(c);
+  }
+  const softTex = radialTex('rgba(255,255,255,1)', 'rgba(255,255,255,0)');
+
+  const skyC = document.createElement('canvas'); skyC.width = 2; skyC.height = 512;
   const sg = skyC.getContext('2d');
-  const grad = sg.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#2a86d6'); grad.addColorStop(0.55, '#8fd6f2'); grad.addColorStop(1, '#ffe2c4');
-  sg.fillStyle = grad; sg.fillRect(0, 0, 2, 256);
+  const grad = sg.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#2f7fd6'); grad.addColorStop(0.45, '#7cc8f0'); grad.addColorStop(0.62, '#c4ecfa'); grad.addColorStop(0.75, '#ffeed6'); grad.addColorStop(1, '#ffeed6');
+  sg.fillStyle = grad; sg.fillRect(0, 0, 2, 512);
   scene.background = new THREE.CanvasTexture(skyC);
-  scene.fog = new THREE.Fog(0xbfe6f2, 55, 180);
+  scene.fog = new THREE.Fog(0xcdeef7, 55, 190);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x1d6f8f, 0.85));
-  const sunLight = new THREE.DirectionalLight(0xfff1d6, 0.95);
-  sunLight.position.set(-15, 40, 20); scene.add(sunLight);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x2a8fb0, 0.9));
+  const sunLight = new THREE.DirectionalLight(0xfff1d6, 1.0);
+  sunLight.position.set(30, 40, -60); scene.add(sunLight);
+  const fillLight = new THREE.DirectionalLight(0xbfe8ff, 0.45);
+  fillLight.position.set(-20, 20, 30); scene.add(fillLight);
 
-  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(14, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff1b0, fog: false }));
-  sunDisc.position.set(70, 60, -380); scene.add(sunDisc);
+  const SUN_POS = new THREE.Vector3(60, 42, -380);
+  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(12, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff6cf, fog: false }));
+  sunDisc.position.copy(SUN_POS); scene.add(sunDisc);
+  const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex, color: 0xffe9a8, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  sunGlow.scale.set(150, 150, 1); sunGlow.position.copy(SUN_POS); scene.add(sunGlow);
 
-  const islandMat = new THREE.MeshLambertMaterial({ color: 0x3f9a6b, flatShading: true });
-  [[-60, -240, 18], [45, -260, 26], [95, -230, 14]].forEach(([x, z, s]) => {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), islandMat);
-    m.scale.set(s * 1.6, s * 0.55, s); m.position.set(x, -1, z); scene.add(m);
+  // puffy clouds
+  const cloudTex = (() => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
+    g.filter = 'blur(4px)';
+    [[70, 80, 38], [120, 62, 50], [175, 78, 40], [100, 92, 34], [150, 95, 36], [205, 92, 26], [45, 96, 24]].forEach(([x, y, r]) => {
+      const gr = g.createRadialGradient(x, y - r * 0.3, r * 0.2, x, y, r);
+      gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.75, '#f4f9ff'); gr.addColorStop(1, 'rgba(225,238,250,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    });
+    return new THREE.CanvasTexture(c);
+  })();
+  const clouds = [];
+  for (let i = 0; i < 11; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, transparent: true, depthWrite: false, fog: false, opacity: rand(0.75, 1) }));
+    const sc = rand(50, 95); sp.scale.set(sc, sc * 0.5, 1);
+    sp.position.set(rand(-260, 260), rand(28, 85), rand(-340, -280));
+    scene.add(sp); clouds.push(sp);
+  }
+
+  // islands with palms
+  const islandMat = new THREE.MeshLambertMaterial({ color: 0x3f9a6b });
+  const sandMat = new THREE.MeshLambertMaterial({ color: 0xf3dfae });
+  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8a6440 });
+  const leafMat = new THREE.MeshLambertMaterial({ color: 0x2f8f4e, side: THREE.DoubleSide });
+  [[-70, -250, 18], [45, -270, 26], [110, -240, 14]].forEach(([x, z, s]) => {
+    const sand = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), sandMat);
+    sand.scale.set(s * 1.9, s * 0.18, s * 1.2); sand.position.set(x, -0.5, z); scene.add(sand);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), islandMat);
+    m.scale.set(s * 1.4, s * 0.5, s * 0.9); m.position.set(x, -1, z); scene.add(m);
+    for (let k = 0; k < 3; k++) {
+      const palm = new THREE.Group();
+      const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 7, 6), trunkMat); tr.position.y = 3.5; palm.add(tr);
+      for (let l = 0; l < 6; l++) {
+        const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.9, 4.5, 3), leafMat);
+        leaf.position.y = 7; leaf.rotation.set(0, l * 1.05, 1.9); leaf.translateY(2); palm.add(leaf);
+      }
+      palm.rotation.z = rand(-0.25, 0.25);
+      palm.position.set(x + rand(-s * 0.9, s * 0.9), s * 0.35, z + rand(-2, 2)); scene.add(palm);
+    }
   });
 
-  // ocean
-  const OW = 80, OL = 200, SX = 64, SZ = 128;
+  // ocean: waves are computed on the GPU with the same formula as waveH() below
+  const OW = 90, OL = 210, SX = 110, SZ = 240;
   const oceanGeo = new THREE.PlaneGeometry(OW, OL, SX, SZ);
   oceanGeo.rotateX(-Math.PI / 2);
   oceanGeo.translate(0, 0, -OL / 2 + 25);
-  const opos = oceanGeo.attributes.position;
-  const baseX = new Float32Array(opos.count), baseZ = new Float32Array(opos.count);
-  for (let i = 0; i < opos.count; i++) { baseX[i] = opos.getX(i); baseZ[i] = opos.getZ(i); }
-  const ocol = new Float32Array(opos.count * 3);
-  oceanGeo.setAttribute('color', new THREE.BufferAttribute(ocol, 3));
-  const ocean = new THREE.Mesh(oceanGeo, new THREE.MeshPhongMaterial({
-    vertexColors: true, shininess: 60, specular: 0x4fa9c8, flatShading: true,
+  const oceanU = {
+    uTime: { value: 0 }, uDist: { value: 0 }, uBig: { value: 0 },
+    uSun: { value: SUN_POS.clone().normalize() },
+    uFogC: { value: new THREE.Color(0xcdeef7) }, uFogN: { value: 55 }, uFogF: { value: 190 },
+  };
+  const WAVE_GLSL = `
+    uniform float uTime, uDist, uBig;
+    float wallH(float x) { float d = -x - 9.5; return d > 0.0 ? min(d * d * 0.085, 10.0) : 0.0; }
+    float waveH(float x, float z) {
+      float zz = z - uDist; float amp = 1.0 + uBig * 0.9;
+      return amp * (0.55 * sin(zz * 0.22 + x * 0.12) + 0.3 * sin(zz * 0.09 - x * 0.35 + uTime * 0.9))
+        + 0.15 * sin(x * 0.6 + zz * 0.5 + uTime * 1.7)
+        + wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.35);
+    }`;
+  const ocean = new THREE.Mesh(oceanGeo, new THREE.ShaderMaterial({
+    uniforms: oceanU,
+    vertexShader: WAVE_GLSL + `
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall;
+      void main() {
+        vec3 p = position;
+        float h = waveH(p.x, p.z);
+        float e = 0.3;
+        float hx = waveH(p.x + e, p.z) - waveH(p.x - e, p.z);
+        float hz = waveH(p.x, p.z + e) - waveH(p.x, p.z - e);
+        vN = normalize(vec3(-hx, 2.0 * e, -hz));
+        p.y = h; vH = h; vWall = wallH(p.x);
+        vec4 w = modelMatrix * vec4(p, 1.0); vW = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: `
+      uniform float uTime, uDist; uniform vec3 uSun, uFogC; uniform float uFogN, uFogF;
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall;
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+      }
+      void main() {
+        vec2 uv = vec2(vW.x, vW.z - uDist);
+        float n1 = noise(uv * 1.1 + vec2(uTime * 0.5, 0.0));
+        float n2 = noise(uv * 2.3 - vec2(0.0, uTime * 0.8));
+        float far = smoothstep(15.0, 90.0, length(vW - cameraPosition));
+        vec3 N = normalize(vN + vec3(n1 - 0.5, 0.0, n2 - 0.5) * 0.45 * (1.0 - far * 0.8));
+        vec3 V = normalize(cameraPosition - vW);
+        float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+        vec3 deep = vec3(0.01, 0.30, 0.50), shallow = vec3(0.06, 0.70, 0.78);
+        vec3 col = mix(deep, shallow, clamp((vH - vWall + 0.7) / 2.0, 0.0, 1.0));
+        float wf = clamp(vWall / 9.0, 0.0, 1.0);
+        col = mix(col, vec3(0.05, 0.62, 0.70), wf * 0.6);
+        fres *= 1.0 - wf * 0.8;
+        col *= 0.8 + 0.3 * clamp(dot(N, uSun), 0.0, 1.0);
+        col = mix(col, vec3(0.70, 0.90, 0.98), clamp(fres, 0.0, 0.65));
+        vec3 Hh = normalize(uSun + V);
+        col += vec3(1.0, 0.95, 0.82) * pow(max(dot(N, Hh), 0.0), 220.0) * 2.5;
+        float fn = noise(uv * 2.6 + vec2(0.0, uTime * 0.4));
+        float foam = smoothstep(0.85, 1.4, vH - vWall * 1.1 + fn * 0.55);
+        foam = max(foam, smoothstep(8.6, 10.2, vWall + fn * 1.2) * 0.9);
+        foam = max(foam, smoothstep(0.8, 0.95, noise(uv * vec2(0.5, 0.22) + vec2(uTime * 0.03, 0.0))) * 0.4);
+        col = mix(col, vec3(0.97, 0.99, 1.0), clamp(foam, 0.0, 1.0));
+        col = mix(col, uFogC, smoothstep(uFogN, uFogF, length(vW - cameraPosition)));
+        gl_FragColor = vec4(col, 1.0);
+      }`,
   }));
   scene.add(ocean);
-  const DEEP = new THREE.Color('#0a78a3'), SHALLOW = new THREE.Color('#1fa9c6'), FOAM = new THREE.Color('#f4fcff');
-  const tmpC = new THREE.Color();
 
   let T = 0, dist = 0, bigAmt = 0;
   function wall(x) { const d = -x - 9.5; return d > 0 ? Math.min(d * d * 0.085, 10) : 0; }
@@ -358,43 +488,41 @@ body.touch #pad {
       + wall(x) * (1 + 0.12 * Math.sin(zz * 0.05 + T) + bigAmt * 0.35);
   }
   function updateOcean() {
-    for (let i = 0; i < opos.count; i++) {
-      const x = baseX[i], z = baseZ[i];
-      const y = waveH(x, z);
-      opos.setY(i, y);
-      const w = wall(x);
-      let foam = clamp((y - 0.75) / 1.1, 0, 1);
-      if (w > 0) foam = clamp((w - 7.5) / 2.5, 0, 1) * 0.9 + foam * 0.3;
-      tmpC.copy(DEEP).lerp(SHALLOW, clamp((y + 0.8) / 1.8, 0, 1)).lerp(FOAM, foam);
-      ocol[i * 3] = tmpC.r; ocol[i * 3 + 1] = tmpC.g; ocol[i * 3 + 2] = tmpC.b;
-    }
-    opos.needsUpdate = true; oceanGeo.attributes.color.needsUpdate = true;
-    oceanGeo.computeVertexNormals();
+    oceanU.uTime.value = T; oceanU.uDist.value = dist; oceanU.uBig.value = bigAmt;
+    clouds.forEach((c, i) => { c.position.x += 0.6 * (1 + i % 3) * 0.016; if (c.position.x > 300) c.position.x = -300; });
   }
+
+  // soft shadow under the board
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 4.2), new THREE.MeshBasicMaterial({
+    map: radialTex('rgba(0,40,60,0.55)', 'rgba(0,40,60,0)'), transparent: true, depthWrite: false,
+  }));
+  shadow.rotation.order = 'YXZ'; scene.add(shadow);
 
   // ---------- surfer ----------
   const mat = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.6 }, o));
-  const SKIN = mat(0xf2c3a0), SUIT = mat(0x14b3c9), HAIR = mat(0x3a2418);
+  const SKIN = mat(0xf4c4a2, { roughness: 0.5 }), SUIT = mat(0xff4f8b, { roughness: 0.4 }), HAIR = mat(0x3a2418, { roughness: 0.45 }), SHORTS = mat(0x10a5c2, { roughness: 0.5 });
   const surfer = new THREE.Group(); scene.add(surfer);
   const board = new THREE.Group(); surfer.add(board);
-  const deck = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 32), mat(0xff5fa2, { roughness: 0.35 }));
+  const deck = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 40), mat(0xffd23f, { roughness: 0.25, metalness: 0.05 }));
   deck.scale.set(0.95, 1, 3.1); board.add(deck);
-  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.125, 24), mat(0xffffff));
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.125, 24), mat(0xff4f8b));
   stripe.scale.set(0.16, 1, 2.9); board.add(stripe);
   const finM = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.35, 3), mat(0x15304a));
   finM.position.set(0, -0.2, 1.2); finM.rotation.x = Math.PI; board.add(finM);
 
   const rider = new THREE.Group(); board.add(rider);
-  const limb = (r1, r2, len, m) => new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, len, 10), m);
+  const limb = (r1, r2, len, m) => new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, len, 16), m);
   [-0.32, 0.32].forEach(z => {
     const leg = limb(0.09, 0.08, 0.85, SKIN); leg.position.set(0, 0.47, z * 0.8); leg.rotation.x = z * 0.45; rider.add(leg);
   });
-  const hips = new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 10), SUIT); hips.position.y = 0.88; hips.scale.set(1, 0.7, 1.2); rider.add(hips);
+  const hips = new THREE.Mesh(new THREE.SphereGeometry(0.21, 20, 14), SHORTS); hips.position.y = 0.88; hips.scale.set(1, 0.7, 1.2); rider.add(hips);
   const torso = limb(0.2, 0.17, 0.55, SUIT); torso.position.y = 1.15; rider.add(torso);
   const neck = limb(0.06, 0.06, 0.12, SKIN); neck.position.y = 1.47; rider.add(neck);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 14), SKIN); head.position.y = 1.66; rider.add(head);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 28, 20), SKIN); head.position.y = 1.66; rider.add(head);
   const hair = new THREE.Mesh(new THREE.SphereGeometry(0.215, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), HAIR);
   hair.position.set(-0.02, 1.68, 0); hair.rotation.z = 0.35; rider.add(hair);
+  const shades = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.07, 0.3), mat(0x15304a, { roughness: 0.1, metalness: 0.4 }));
+  shades.position.set(0.18, 1.68, 0); rider.add(shades);
   const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), HAIR); tail.position.set(-0.22, 1.62, 0); rider.add(tail);
   const tail2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), HAIR); tail2.position.set(-0.3, 1.5, 0); rider.add(tail2);
 
@@ -416,12 +544,12 @@ body.touch #pad {
   const brushTip = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 8), brushTipMat); brushTip.rotation.z = -Math.PI / 2; brushTip.position.x = 0.34; armR.hand.add(brushTip);
 
   // spray particles
-  const PN = 360;
+  const PN = 600;
   const pGeo = new THREE.BufferGeometry();
   const pPos = new Float32Array(PN * 3);
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
   const parts = Array.from({ length: PN }, () => ({ life: 0, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0 }));
-  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 })));
+  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, map: softTex, transparent: true, opacity: 0.95, depthWrite: false })));
   let pIdx = 0;
   function emit(x, y, z, vx, vy, vz, life) {
     const p = parts[pIdx]; pIdx = (pIdx + 1) % PN;
@@ -435,18 +563,31 @@ body.touch #pad {
     band: new THREE.CylinderGeometry(0.5, 0.52, 0.25, 16),
     buoyTop: new THREE.SphereGeometry(0.2, 12, 8),
     fin: new THREE.ConeGeometry(0.6, 1.4, 4),
-    bottle: new THREE.CylinderGeometry(0.33, 0.37, 0.62, 20),
-    cap: new THREE.CylinderGeometry(0.12, 0.15, 0.5, 12),
+    glass: new THREE.CylinderGeometry(0.42, 0.46, 0.66, 24),
+    liquid: new THREE.CylinderGeometry(0.36, 0.4, 0.5, 24),
+    neck: new THREE.CylinderGeometry(0.16, 0.2, 0.12, 16),
+    cap: new THREE.CylinderGeometry(0.15, 0.17, 0.72, 16),
+    pillar: new THREE.CylinderGeometry(0.55, 1.0, 16, 24, 1, true),
+    arrow: new THREE.ConeGeometry(0.5, 0.85, 4),
+    foam: new THREE.TorusGeometry(1.15, 0.22, 6, 28),
     ring: new THREE.TorusGeometry(0.8, 0.06, 8, 36),
     star: new THREE.OctahedronGeometry(0.28, 0),
   };
   const MT = {
     rock: mat(0x6f7684, { flatShading: true, roughness: 0.95 }),
     red: mat(0xe8344a), white: mat(0xffffff), fin: mat(0x5b6f80, { flatShading: true }),
-    cap: mat(0x15304a, { roughness: 0.3 }),
+    cap: mat(0x15304a, { roughness: 0.15, metalness: 0.3 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.1 }),
+    arrow: mat(0xffd23f, { emissive: 0xffb400, emissiveIntensity: 0.6, roughness: 0.3 }),
+    foam: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }),
     gold: mat(0xffcc33, { emissive: 0xffaa00, emissiveIntensity: 0.5, metalness: 0.6, roughness: 0.2 }),
   };
-  const bottleMats = COLORS.map(c => mat(c.hex, { emissive: c.hex, emissiveIntensity: 0.3, roughness: 0.2 }));
+  const bottleMats = COLORS.map(c => mat(c.hex, { emissive: c.hex, emissiveIntensity: 0.35, roughness: 0.15 }));
+  const pillarTex = (() => { const c = document.createElement('canvas'); c.width = 2; c.height = 64; const g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.9)');
+    g.fillStyle = gr; g.fillRect(0, 0, 2, 64); return new THREE.CanvasTexture(c); })();
+  const pillarMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color: c.hex, map: pillarTex, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  const haloMats = COLORS.map(c => new THREE.SpriteMaterial({ map: softTex, color: c.hex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
   const ringMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color: c.hex, transparent: true, opacity: 0.55 }));
   const goldRing = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.7 });
 
@@ -454,7 +595,9 @@ body.touch #pad {
   const SPAWN_Z = -150;
   function addEnt(e) { scene.add(e.mesh); ents.push(e); }
   function rock(x, z, s) {
-    const m = new THREE.Mesh(G.rock, MT.rock); m.scale.set(s * 1.2, s * 0.9, s); m.rotation.set(rand(0, 3), rand(0, 3), 0);
+    const m = new THREE.Group();
+    const r = new THREE.Mesh(G.rock, MT.rock); r.scale.set(s * 1.2, s * 0.9, s); r.rotation.set(rand(0, 3), rand(0, 3), 0); m.add(r);
+    const f = new THREE.Mesh(G.foam, MT.foam); f.rotation.x = Math.PI / 2; f.scale.set(s, s, 0.4); f.position.y = -0.15; m.add(f);
     addEnt({ kind: 'rock', mesh: m, x, z, r: s * 0.95, yOff: 0.1 });
   }
   function buoy(x, z) {
@@ -486,19 +629,17 @@ body.touch #pad {
   }
   function bottle(x, z, ci) {
     const m = new THREE.Group();
-    let ring;
-    if (ci < 0) {
-      m.add(new THREE.Mesh(G.bottle, MT.gold));
-      const s = new THREE.Mesh(G.star, MT.white); s.position.y = 0.9; m.add(s);
-      ring = new THREE.Mesh(G.ring, goldRing);
-    } else {
-      m.add(new THREE.Mesh(G.bottle, bottleMats[ci]));
-      ring = new THREE.Mesh(G.ring, ringMats[ci]);
-    }
-    const cap = new THREE.Mesh(G.cap, MT.cap); cap.position.y = 0.55; m.add(cap);
-    ring.rotation.x = Math.PI / 2; ring.position.y = -0.1; m.add(ring);
+    const body = new THREE.Group(); m.add(body);
+    body.add(new THREE.Mesh(G.liquid, bottleMats[ci]));
+    body.add(new THREE.Mesh(G.glass, MT.glass));
+    const nk = new THREE.Mesh(G.neck, MT.glass); nk.position.y = 0.39; body.add(nk);
+    const cap = new THREE.Mesh(G.cap, MT.cap); cap.position.y = 0.8; body.add(cap);
+    const halo = new THREE.Sprite(haloMats[ci]); halo.scale.set(2.6, 2.6, 1); halo.position.y = 0.2; m.add(halo);
+    // "this one!" markers, shown only for the color the customer wants
+    const pillar = new THREE.Mesh(G.pillar, pillarMats[ci]); pillar.position.y = 8; m.add(pillar);
+    const arrow = new THREE.Mesh(G.arrow, MT.arrow); arrow.rotation.x = Math.PI; arrow.position.y = 2.3; m.add(arrow);
     m.scale.setScalar(1.25);
-    addEnt({ kind: 'bottle', mesh: m, x, z, r: 0.95, yOff: 0.9, phase: rand(0, 6), color: ci });
+    addEnt({ kind: 'bottle', mesh: m, body, pillar, arrow, halo, x, z, r: 1.0, yOff: 0.75, phase: rand(0, 6), color: ci });
   }
   function spawnBottles() {
     const n = nails[cur];
@@ -517,6 +658,7 @@ body.touch #pad {
   let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
   let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
   let brush = null, nails = [], cur = 0, orderWait = 0;
+  let spillFlash = 0, lastWant = -1;
   let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
   let nextBig = 20, bigLeft = 0;
   const keys = { left: false, right: false, paint: false };
@@ -539,7 +681,7 @@ body.touch #pad {
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; perfects = 0; ordersDone = 0; orderNo = 0;
     brush = null; orderWait = 0; obsTimer = 2.4; botTimer = 0.5; invuln = 0; shake = 0; drift = 0;
-    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0;
+    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0; dist = 0;
     popQ.length = 0;
     newOrder();
   }
@@ -659,6 +801,15 @@ body.touch #pad {
     rr(c, -w / 2, -5, w, 11, 4); c.fill();
     c.strokeStyle = '#15304a'; c.lineWidth = 1.2; c.stroke();
     c.restore();
+    // show how far the brush has slipped off its guide line
+    if (painting && Math.abs(drift) > 1.5) {
+      const dir = Math.sign(drift), y = by - 16;
+      c.strokeStyle = '#e8344a'; c.fillStyle = '#e8344a'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(L.x, y); c.lineTo(bx, y); c.stroke();
+      c.beginPath(); c.moveTo(bx + dir * 6, y); c.lineTo(bx - dir * 2, y - 6); c.lineTo(bx - dir * 2, y + 6); c.fill();
+      c.font = '800 15px "M PLUS Rounded 1c", sans-serif'; c.textAlign = 'center';
+      c.lineWidth = 4; c.strokeStyle = '#fff'; c.strokeText('ズレ!', 80, 30); c.fillText('ズレ!', 80, 30);
+    }
   }
   function drawSparkles(c, x, y, w, h, count) {
     c.save(); nailPath(c); c.clip();
@@ -688,6 +839,7 @@ body.touch #pad {
       const kx = nw / 60, ky = nh / 108;
       c.save(); rr(c, -w / 2 + 1, -len + 1, w - 2, nh + 8, w / 2); c.clip();
       c.fillStyle = '#f8e3da'; rr(c, nx, ny, nw, nh, nw / 2); c.fill();
+      if (n && !n.done) { c.globalAlpha = 0.45; c.fillStyle = COLORS[n.target].hex; rr(c, nx, ny, nw, nh, nw / 2); c.fill(); c.globalAlpha = 1; }
       if (n) c.drawImage(n.cv, 50 - 4 / kx, 40 - 3 / ky, (nw + 8) / kx, (nh + 8) / ky, nx - 4, ny - 3, nw + 8, nh + 8);
       c.restore();
       if (n) {
@@ -725,10 +877,22 @@ body.touch #pad {
     wb.style.background = steady > 0.72 ? '#35c08a' : steady > 0.45 ? '#ffc93c' : '#e8344a';
     $('combo').textContent = combo >= 2 ? `${combo} コンボ!` : '';
     const n = nails[cur];
+    const wb2 = $('wantBig'), ws = $('wantState'), bp = $('bP');
     if (n && !n.done) {
-      const w = $('wantName'); w.textContent = COLORS[n.target].name; w.style.background = COLORS[n.target].hex;
+      const col = COLORS[n.target].hex;
+      const w = $('wantName'); w.textContent = COLORS[n.target].name; w.style.background = col;
+      $('wantBottle').style.background = col;
+      if (lastWant !== n.target) { lastWant = n.target; wb2.classList.remove('bump'); void wb2.offsetWidth; wb2.classList.add('bump'); }
+      const ok = brush === n.target;
+      ws.textContent = ok ? '✓ ぬれるよ！' : 'のボトルをひろおう';
+      ws.className = ok ? 'ok' : 'ng';
+      bp.classList.toggle('ready', ok); bp.style.setProperty('--want', col);
+      if (bp.dataset.ok !== String(ok)) { bp.dataset.ok = String(ok); bp.innerHTML = ok ? 'ぬる' : 'ぬる<small>色ちがい</small>'; }
       $('fingerName').textContent = `${FINGER_NAMES[cur]} ${n.strokes + 1}/3`;
-    } else if (orderWait > 0) $('fingerName').textContent = 'お会計中';
+    } else if (orderWait > 0) {
+      $('fingerName').textContent = 'お会計中'; ws.textContent = 'つぎのお客さん…'; ws.className = '';
+    }
+    $('nailCard').classList.toggle('warn', spillFlash > 0);
     nails.forEach((nn, i) => {
       if (nn.used != null) nail3D[i].material.color.set(COLORS[nn.used].hex);
       else nail3D[i].material.color.set(0xf3d9cf);
@@ -790,6 +954,14 @@ body.touch #pad {
     for (let k = 1; k <= steps; k++) {
       const t = k / steps;
       dab(n, lerp(prevX, bx, t), lerp(prevY, by, t), BRUSH_W, brush, 0.5);
+    }
+    n.evalT -= dt;
+    if (n.evalT <= 0) {
+      const before = n.spill; evalNail(n); n.evalT = 0.12;
+      if (n.spill > before + 0.002) {
+        spillFlash = 0.35;
+        hint(keys.left || keys.right ? '←→で動くと ハケがズレて はみだす！' : 'ゆれで ハケがズレた！ じっとして');
+      }
     }
     if (n.sp >= 1) {
       n.strokes++; n.sp = 0; sfx.stroke();
@@ -879,6 +1051,11 @@ body.touch #pad {
     const dhx = (waveH(px + 0.5, 0) - waveH(px - 0.5, 0));
     const dhz = (waveH(px, -0.8) - waveH(px, 0.8)) / 1.6;
     surfer.position.set(px, sy + 0.08 + jumpY, 0);
+    shadow.position.set(px + 0.3, sy + 0.12, 0.3);
+    shadow.rotation.set(-Math.PI / 2 - Math.atan(dhz) * 0.8, 0, 0);
+    shadow.rotation.y = -vx * 0.05;
+    shadow.material.opacity = clamp(1 - jumpY * 0.3, 0.2, 1);
+    const shs = 1 + jumpY * 0.15; shadow.scale.set(shs, shs, 1);
     board.rotation.set(-Math.atan(dhz) * 0.8 + (jumpY > 0 ? -0.25 : 0), -vx * 0.05, Math.atan(dhx) * 0.9 - vx * 0.035);
     rider.rotation.y = Math.PI * 0.02;
     rider.rotation.z = -Math.abs(vx) * 0.01;
@@ -902,7 +1079,15 @@ body.touch #pad {
       if (e.kind === 'fin') e.x = clamp(e.baseX + Math.sin(T * 1.6 + e.phase) * e.swing, -LANE, LANE);
       const y = waveH(e.x, e.z);
       e.mesh.position.set(e.x, y + e.yOff + (e.kind === 'bottle' ? Math.sin(T * 3 + e.phase) * 0.2 : 0), e.z);
-      if (e.kind === 'bottle') e.mesh.rotation.y += dt * 2.4;
+      if (e.kind === 'bottle') {
+        e.body.rotation.y += dt * 2.4;
+        const want = playing && orderWait <= 0 && nails[cur] && !nails[cur].done && nails[cur].target === e.color && brush !== e.color;
+        e.pillar.visible = e.arrow.visible = want;
+        e.arrow.position.y = 2.3 + Math.sin(T * 6 + e.phase) * 0.25; e.arrow.rotation.y += dt * 3;
+        const sc = want ? 1.45 + Math.sin(T * 8) * 0.08 : 1.0;
+        e.mesh.scale.setScalar(sc);
+        e.halo.material.opacity = want ? 0.95 : 0.45;
+      }
       if (e.kind === 'buoy') e.mesh.rotation.z = Math.sin(T * 2 + e.phase) * 0.2;
       if (e.kind === 'fin') e.mesh.rotation.y = Math.cos(T * 1.6 + e.phase) > 0 ? 0 : Math.PI;
       if (playing && !e.gone && Math.abs(e.z) < 1.3 && Math.abs(e.x - px) < e.r + 0.45) {
@@ -935,9 +1120,10 @@ body.touch #pad {
 
     shake = Math.max(0, shake - dt);
     const sh = shake * 0.5 + bigAmt * 0.06;
-    camera.position.set(px * 0.55 + 1.2 + rand(-sh, sh), sy * 0.6 + 4.2 + jumpY * 0.4 + rand(-sh, sh), 7.8);
+    camera.position.set(px * 0.55 + 1.2 + rand(-sh, sh), sy * 0.6 + 3.9 + jumpY * 0.4 + rand(-sh, sh), 7.4);
     camera.lookAt(px * 0.75, sy * 0.5 + 1.2, -9);
 
+    spillFlash = Math.max(0, spillFlash - dt);
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
     if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) $('hint').classList.remove('show'); }
     if (playing) updateHUD();
