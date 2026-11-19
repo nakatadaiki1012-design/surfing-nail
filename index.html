@@ -2,13 +2,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
 <style>
-/* Layout: full-screen 3D sea, HUD cards pinned to the corners, touch pads along the bottom. One sunny look, single theme. */
+/* Layout: full-screen 3D sea; left column = status + zoomed nail workbench; right = customer order; touch pads along the bottom. One sunny look, single theme. */
 :root {
   --ink: #15304a;
   --paper: #fffaf4;
   --coral: #ff4f8b;
   --sun: #ffc93c;
   --lagoon: #10a5c2;
+  --blush: #fde9e4;
   --line: rgba(21, 48, 74, .14);
   --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
@@ -28,12 +29,13 @@ body {
   background: var(--paper); border: 2px solid var(--ink); border-radius: 14px;
   box-shadow: 0 4px 0 var(--ink);
 }
-#status {
+#left {
   position: fixed;
   top: calc(10px + env(safe-area-inset-top, 0px));
   left: calc(10px + env(safe-area-inset-left, 0px));
-  width: 176px; padding: 10px 12px; display: grid; gap: 6px; font-size: 12px;
+  width: 176px; display: grid; gap: 10px;
 }
+#status { padding: 9px 12px; display: grid; gap: 5px; font-size: 12px; }
 #status .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 #score { font-family: var(--display); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
 #time { font-family: var(--display); font-size: 18px; font-variant-numeric: tabular-nums; }
@@ -41,14 +43,21 @@ body {
 .lbl { font-weight: 800; letter-spacing: .04em; opacity: .7; font-size: 11px; }
 #brushRow { display: flex; align-items: center; gap: 8px; font-weight: 800; }
 #swatch {
-  width: 16px; height: 22px; border-radius: 4px 4px 6px 6px; border: 2px solid var(--ink);
-  background: repeating-linear-gradient(45deg, #fff 0 4px, #dde 4px 8px); position: relative;
+  width: 16px; height: 22px; border-radius: 4px 4px 6px 6px; border: 2px solid var(--ink); flex: none;
+  background: repeating-linear-gradient(45deg, #fff 0 4px, #dde 4px 8px); position: relative; margin-top: 8px;
 }
 #swatch::before { content: ""; position: absolute; left: 3px; right: 3px; top: -9px; height: 8px; background: var(--ink); border-radius: 2px; }
+#glit { color: #c48a00; font-size: 11px; }
 .bar { height: 9px; border-radius: 6px; background: #e7eef3; border: 1.5px solid var(--ink); overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 0; background: var(--coral); }
-#wobBar > i { background: #35c08a; }
 #combo { font-weight: 800; color: var(--coral); min-height: 1em; }
+
+#nailCard { padding: 7px 8px 8px; text-align: center; }
+#nailHead { font-weight: 800; font-size: 12px; display: flex; justify-content: space-between; gap: 4px; }
+#nailHead b { font-family: var(--display); font-weight: 400; font-size: 13px; }
+#nailView { width: 150px; height: 188px; display: block; margin: 4px auto 2px; border-radius: 10px; }
+#nailFoot { font-size: 11px; font-weight: 800; display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+#nailFoot .bad { color: #d62a48; }
 
 #order {
   position: fixed;
@@ -60,24 +69,25 @@ body {
 #hand { width: 164px; height: 128px; display: block; margin: 2px auto 0; }
 #want { font-size: 12px; font-weight: 800; }
 #want b { padding: 1px 8px; border-radius: 999px; color: #fff; border: 1.5px solid var(--ink); }
+#tip { font-size: 11px; font-weight: 800; margin-top: 3px; opacity: .75; font-variant-numeric: tabular-nums; }
 
 #pop {
-  position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%);
-  font-family: var(--display); font-size: clamp(22px, 6vw, 40px); color: #fff;
+  position: fixed; left: 50%; top: 36%; transform: translate(-50%, -50%);
+  font-family: var(--display); font-size: clamp(20px, 5.4vw, 38px); color: #fff;
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
   text-shadow: 0 4px 0 var(--ink); pointer-events: none; white-space: nowrap;
-  opacity: 0; transition: opacity .25s, transform .25s;
+  opacity: 0; transition: opacity .2s, transform .2s;
 }
 #pop.show { opacity: 1; transform: translate(-50%, -60%); }
 #hint {
-  position: fixed; left: 50%; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(118px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
 }
 #hint.show { opacity: .92; }
 #big {
-  position: fixed; left: 0; right: 0; top: calc(30% - 60px); text-align: center; pointer-events: none;
-  font-family: var(--display); font-size: clamp(20px, 5vw, 34px); color: var(--sun);
+  position: fixed; left: 0; right: 0; top: calc(26% - 60px); text-align: center; pointer-events: none;
+  font-family: var(--display); font-size: clamp(18px, 4.6vw, 32px); color: var(--sun);
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
@@ -98,7 +108,7 @@ body.touch #pad {
 }
 #pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); background: #fff; }
 #bP { width: 88px !important; height: 88px !important; background: var(--coral) !important; color: #fff !important; font-size: 20px !important; }
-#bJ { font-size: 15px !important; }
+#bJ { font-size: 13px !important; white-space: nowrap; }
 
 /* overlays */
 .overlay {
@@ -106,19 +116,20 @@ body.touch #pad {
   padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
   background: linear-gradient(180deg, rgba(16, 165, 194, .35), rgba(21, 48, 74, .55));
 }
-.panel { width: min(440px, 100%); padding: 22px 22px 20px; display: grid; gap: 14px; text-align: center; max-height: 100%; overflow: auto; }
+.panel { width: min(460px, 100%); padding: 20px 22px 18px; display: grid; gap: 12px; text-align: center; max-height: 100%; overflow: auto; box-sizing: border-box; }
 .logo {
   font-family: var(--display); font-size: clamp(38px, 11vw, 58px); line-height: 1; color: var(--coral);
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink);
   letter-spacing: .02em; text-wrap: balance;
 }
 .lead { font-size: 15px; font-weight: 800; margin: 0; text-wrap: balance; }
-.how { text-align: left; display: grid; gap: 8px; font-size: 13px; margin: 0; padding: 12px 14px; background: #eef8fb; border-radius: 10px; border: 1.5px solid var(--line); }
+.how { text-align: left; display: grid; gap: 7px; font-size: 13px; margin: 0; padding: 12px 14px; background: #eef8fb; border-radius: 10px; border: 1.5px solid var(--line); }
 .how div { display: flex; gap: 10px; align-items: baseline; }
 .how kbd {
-  font-family: var(--body); font-weight: 800; font-size: 12px; min-width: 64px; text-align: center;
+  font-family: var(--body); font-weight: 800; font-size: 12px; min-width: 64px; text-align: center; flex: none;
   background: #fff; border: 1.5px solid var(--ink); border-radius: 6px; padding: 1px 6px; box-shadow: 0 2px 0 var(--ink);
 }
+.tips { text-align: left; font-size: 12.5px; margin: 0; padding: 10px 14px 10px 30px; background: var(--blush); border-radius: 10px; display: grid; gap: 4px; }
 .btn {
   font-family: var(--display); font-size: 22px; color: #fff; background: var(--coral);
   border: 2px solid var(--ink); border-radius: 999px; padding: 12px 18px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
@@ -129,29 +140,44 @@ body.touch #pad {
 .res { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; text-align: left; font-size: 15px; font-weight: 800; padding: 12px 16px; background: #eef8fb; border-radius: 10px; }
 .res span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) {
-  #status { width: 150px; padding: 8px 10px; }
-  #score { font-size: 22px; }
-  #order { width: 156px; }
-  #hand { width: 140px; height: 110px; }
+  #left { width: 140px; gap: 8px; }
+  #status { padding: 7px 9px; }
+  #score { font-size: 21px; }
+  #nailView { width: 116px; height: 145px; }
+  #order { width: 150px; }
+  #hand { width: 134px; height: 105px; }
+}
+@media (max-height: 560px) {
+  #nailView { width: 100px; height: 125px; }
+  #hand { width: 120px; height: 94px; }
+  #want, #tip { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { #pop, #flash { transition: none; } }
 </style>
 
 <div id="stage"></div>
 
-<div id="status" class="card" hidden>
-  <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
-  <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
-  <div id="brushRow"><span class="lbl">ふで</span><span id="swatch"></span><span id="brushName">なし</span></div>
-  <div><div class="lbl">ぬりぐあい</div><div class="bar" id="progBar"><i></i></div></div>
-  <div><div class="lbl" id="wobLbl">手の安定</div><div class="bar" id="wobBar"><i></i></div></div>
-  <div id="combo"></div>
+<div id="left" hidden>
+  <div id="status" class="card">
+    <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
+    <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
+    <div id="brushRow"><span id="swatch"></span><span id="brushName">ポリッシュなし</span><span id="glit" hidden>✦ラメ</span></div>
+    <div><div class="lbl">ポリッシュ残量</div><div class="bar" id="liqBar"><i></i></div></div>
+    <div><div class="lbl">手の安定</div><div class="bar" id="wobBar"><i></i></div></div>
+    <div id="combo"></div>
+  </div>
+  <div id="nailCard" class="card">
+    <div id="nailHead"><b id="fingerName">親指</b><span id="strokeInfo">1/3 真ん中</span></div>
+    <canvas id="nailView"></canvas>
+    <div id="nailFoot"><span id="covTxt">ぬれた 0%</span><span id="spillTxt">はみだし 0%</span></div>
+  </div>
 </div>
 
 <div id="order" class="card" hidden>
   <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
   <canvas id="hand"></canvas>
   <div id="want">つぎは <b id="wantName">ピンク</b></div>
+  <div id="tip">チップ +400</div>
 </div>
 
 <div id="big" hidden>ビッグウェーブ！ スコア2倍</div>
@@ -171,10 +197,16 @@ body.touch #pad {
     <div class="how">
       <div><kbd>← →</kbd><span>波の上を左右に移動</span></div>
       <div><kbd>↑</kbd><span>ジャンプで岩・ブイ・サメをよける</span></div>
-      <div><kbd>スペース</kbd><span>押しっぱなしでネイルをぬる</span></div>
-      <div><kbd>ボトル</kbd><span>ひろうと、ふでがその色になる</span></div>
+      <div><kbd>スペース</kbd><span>押している間、ハケが根元から先へ動いてぬれる</span></div>
+      <div><kbd>ボトル</kbd><span>ひろうと、その色のポリッシュがハケに入る</span></div>
     </div>
-    <p class="lead" style="font-size:13px;font-weight:500">注文と同じ色でぬろう。ぬっている間に大きく動くと、はみだします。ぶつかると、ぬりかけのツメはやり直し。制限時間は90秒。</p>
+    <ol class="tips">
+      <li>プロと同じ「真ん中 → 左 → 右」の3ストロークでぬる。ガイドの線にそってハケが進むよ</li>
+      <li>ぬっている間に動いたり大波でゆれると、ハケがずれて指にはみだす</li>
+      <li>ポリッシュが少ないとハケが細くなってスジになる。ボトルで補充しよう</li>
+      <li>ぬりたては「かわかし中」。かわく前にぶつかると、ヨレてしまう</li>
+      <li>金色のボトルはラメ。つぎのツメが1.5倍の得点に</li>
+    </ol>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -187,6 +219,7 @@ body.touch #pad {
       <span>スコア</span><span id="rScore">0</span>
       <span>パーフェクト</span><span id="rPerfect">0</span>
       <span>仕上げたお客さん</span><span id="rOrders">0</span>
+      <span>大満足</span><span id="rHappy">0</span>
       <span>ベストスコア</span><span id="rBest">0</span>
     </div>
     <button class="btn" id="retryBtn">もう一回</button>
@@ -209,10 +242,91 @@ body.touch #pad {
     { name: 'ミント', hex: '#3fe0a8' },
     { name: 'むらさき', hex: '#a46bff' },
   ];
+  const RGB = COLORS.map(c => [1, 3, 5].map(i => parseInt(c.hex.slice(i, i + 2), 16)));
+  const FINGER_NAMES = ['親指', '人さし指', '中指', 'くすり指', '小指'];
   const GAME_TIME = 90;
   const LANE = 7.5;
 
   if ('ontouchstart' in window || matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
+
+  // =====================================================================
+  // Nail workbench: a 160x200 pixel model of one fingernail.
+  // Paint is real pixels, so coverage, streaks and spill are measured, not faked.
+  // =====================================================================
+  const NW = 160, NH = 200;
+  function nailPath(c) {
+    c.beginPath();
+    c.moveTo(50, 140); c.lineTo(50, 70);
+    c.arc(80, 70, 30, Math.PI, 0);
+    c.lineTo(110, 140);
+    c.quadraticCurveTo(80, 158, 50, 140);
+    c.closePath();
+  }
+  const mask = new Uint8Array(NW * NH);
+  let maskCount = 0;
+  const BANDS = [[66, 94], [50, 72], [88, 110]]; // x ranges for center/left/right
+  const bandCount = [0, 0, 0];
+  (() => {
+    const m = document.createElement('canvas'); m.width = NW; m.height = NH;
+    const c = m.getContext('2d'); c.fillStyle = '#000'; nailPath(c); c.fill();
+    const d = c.getImageData(0, 0, NW, NH).data;
+    for (let i = 0; i < NW * NH; i++) if (d[i * 4 + 3] > 128) {
+      mask[i] = 1; maskCount++;
+      const x = i % NW; BANDS.forEach(([a, b], k) => { if (x >= a && x < b) bandCount[k]++; });
+    }
+  })();
+  // stroke lanes: x, start y (cuticle), end y (tip)
+  const LANES = [
+    { x: 80, y0: 146, y1: 45, name: '真ん中' },
+    { x: 65, y0: 141, y1: 60, name: '左' },
+    { x: 95, y0: 141, y1: 60, name: '右' },
+  ];
+  const BRUSH_W = 28, BRUSH_H = 8;
+
+  function evalNail(n) {
+    const d = n.ctx.getImageData(0, 0, NW, NH).data;
+    const [tr, tg, tb] = RGB[n.target];
+    let good = 0, any = 0, spill = 0;
+    const bandGood = [0, 0, 0];
+    for (let i = 0; i < NW * NH; i++) {
+      const a = d[i * 4 + 3];
+      if (mask[i]) {
+        if (a > 40) any++;
+        if (a > 170) {
+          const dr = d[i * 4] - tr, dg = d[i * 4 + 1] - tg, db = d[i * 4 + 2] - tb;
+          if (dr * dr + dg * dg + db * db < 3600) {
+            good++;
+            const x = i % NW; BANDS.forEach(([lo, hi], k) => { if (x >= lo && x < hi) bandGood[k]++; });
+          }
+        }
+      } else if (a > 60) spill++;
+    }
+    n.cov = good / maskCount;
+    n.wrong = Math.max(0, any - good) / maskCount;
+    n.spill = spill / maskCount;
+    n.bandCov = bandGood.map((g, k) => g / bandCount[k]);
+  }
+
+  function makeNail(target) {
+    const cv = document.createElement('canvas'); cv.width = NW; cv.height = NH;
+    return { target, cv, ctx: cv.getContext('2d'), strokes: 0, sp: 0, lane: 0, cov: 0, spill: 0, wrong: 0, bandCov: [0, 0, 0],
+      done: false, result: null, wet: 0, smudged: false, glitter: false, used: null, evalT: 0 };
+  }
+
+  function dab(n, x, y, w, ci, alpha) {
+    const c = n.ctx;
+    c.globalAlpha = alpha; c.fillStyle = COLORS[ci].hex;
+    rr(c, x - w / 2, y - BRUSH_H / 2, w, BRUSH_H, BRUSH_H / 2); c.fill();
+    c.globalAlpha = 1;
+  }
+  function smear(n, ci) {
+    const c = n.ctx;
+    c.save(); c.globalAlpha = 0.85; c.strokeStyle = COLORS[ci].hex; c.lineCap = 'round';
+    c.lineWidth = rand(8, 13);
+    const sx = rand(60, 100), sy = rand(70, 120), dir = Math.random() < 0.5 ? -1 : 1;
+    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + dir * 25, sy + rand(-20, 20), sx + dir * rand(45, 60), sy + rand(10, 40)); c.stroke();
+    c.restore();
+  }
 
   // ---------- three.js scene ----------
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -238,7 +352,6 @@ body.touch #pad {
   const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(14, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff1b0, fog: false }));
   sunDisc.position.set(70, 60, -380); scene.add(sunDisc);
 
-  // far islands
   const islandMat = new THREE.MeshLambertMaterial({ color: 0x3f9a6b, flatShading: true });
   [[-60, -240, 18], [45, -260, 26], [95, -230, 14]].forEach(([x, z, s]) => {
     const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), islandMat);
@@ -299,7 +412,7 @@ body.touch #pad {
   finM.position.set(0, -0.2, 1.2); finM.rotation.x = Math.PI; board.add(finM);
 
   const rider = new THREE.Group(); board.add(rider);
-  function limb(r1, r2, len, m) { const g = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, len, 10), m); return g; }
+  const limb = (r1, r2, len, m) => new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, len, 10), m);
   [-0.32, 0.32].forEach(z => {
     const leg = limb(0.09, 0.08, 0.85, SKIN); leg.position.set(0, 0.47, z * 0.8); leg.rotation.x = z * 0.45; rider.add(leg);
   });
@@ -320,7 +433,6 @@ body.touch #pad {
     rider.add(pivot); return { pivot, hand };
   }
   const armL = makeArm(-0.22), armR = makeArm(0.22);
-  // tiny painted nails on the left hand
   const nail3D = [];
   for (let i = 0; i < 5; i++) {
     const n = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.03), mat(0xf3d9cf, { roughness: 0.2 }));
@@ -336,12 +448,11 @@ body.touch #pad {
   const pPos = new Float32Array(PN * 3);
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
   const parts = Array.from({ length: PN }, () => ({ life: 0, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0 }));
-  const spray = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 }));
-  scene.add(spray);
+  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 })));
   let pIdx = 0;
-  function emit(x, y, z, vx, vy, vz) {
+  function emit(x, y, z, vx, vy, vz, life) {
     const p = parts[pIdx]; pIdx = (pIdx + 1) % PN;
-    Object.assign(p, { life: rand(0.4, 0.9), x, y, z, vx, vy, vz });
+    Object.assign(p, { life: life || rand(0.4, 0.9), x, y, z, vx, vy, vz });
   }
 
   // ---------- entities ----------
@@ -354,55 +465,87 @@ body.touch #pad {
     bottle: new THREE.CylinderGeometry(0.33, 0.37, 0.62, 20),
     cap: new THREE.CylinderGeometry(0.12, 0.15, 0.5, 12),
     ring: new THREE.TorusGeometry(0.8, 0.06, 8, 36),
+    star: new THREE.OctahedronGeometry(0.28, 0),
   };
   const MT = {
     rock: mat(0x6f7684, { flatShading: true, roughness: 0.95 }),
     red: mat(0xe8344a), white: mat(0xffffff), fin: mat(0x5b6f80, { flatShading: true }),
     cap: mat(0x15304a, { roughness: 0.3 }),
+    gold: mat(0xffcc33, { emissive: 0xffaa00, emissiveIntensity: 0.5, metalness: 0.6, roughness: 0.2 }),
   };
   const bottleMats = COLORS.map(c => mat(c.hex, { emissive: c.hex, emissiveIntensity: 0.3, roughness: 0.2 }));
   const ringMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color: c.hex, transparent: true, opacity: 0.55 }));
+  const goldRing = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.7 });
 
   let ents = [];
+  const SPAWN_Z = -150;
   function addEnt(e) { scene.add(e.mesh); ents.push(e); }
-  function spawnObstacle() {
-    const roll = Math.random();
-    const x = rand(-LANE, LANE);
-    if (roll < 0.45) {
-      const s = rand(0.8, 1.3);
-      const m = new THREE.Mesh(G.rock, MT.rock); m.scale.set(s * 1.2, s * 0.9, s); m.rotation.set(rand(0, 3), rand(0, 3), 0);
-      addEnt({ kind: 'rock', mesh: m, x, z: -150, r: s * 0.95, yOff: 0.1 });
-    } else if (roll < 0.75) {
-      const m = new THREE.Group();
-      m.add(new THREE.Mesh(G.buoy, MT.red));
-      const b = new THREE.Mesh(G.band, MT.white); b.position.y = 0.1; m.add(b);
-      const t = new THREE.Mesh(G.buoyTop, MT.white); t.position.y = 0.75; m.add(t);
-      addEnt({ kind: 'buoy', mesh: m, x, z: -150, r: 0.6, yOff: 0.35, phase: rand(0, 6) });
+  function rock(x, z, s) {
+    const m = new THREE.Mesh(G.rock, MT.rock); m.scale.set(s * 1.2, s * 0.9, s); m.rotation.set(rand(0, 3), rand(0, 3), 0);
+    addEnt({ kind: 'rock', mesh: m, x, z, r: s * 0.95, yOff: 0.1 });
+  }
+  function buoy(x, z) {
+    const m = new THREE.Group();
+    m.add(new THREE.Mesh(G.buoy, MT.red));
+    const b = new THREE.Mesh(G.band, MT.white); b.position.y = 0.1; m.add(b);
+    const t = new THREE.Mesh(G.buoyTop, MT.white); t.position.y = 0.75; m.add(t);
+    addEnt({ kind: 'buoy', mesh: m, x, z, r: 0.6, yOff: 0.35, phase: rand(0, 6) });
+  }
+  function fin(x, z) {
+    const m = new THREE.Mesh(G.fin, MT.fin); m.scale.set(0.35, 1, 1);
+    addEnt({ kind: 'fin', mesh: m, x, z, r: 0.55, yOff: 0.4, phase: rand(0, 6), baseX: x, swing: rand(2, 3.5) });
+  }
+  // obstacle patterns always leave a way through
+  function spawnObstacles(diff) {
+    const r = Math.random();
+    if (r < 0.35 || diff < 0.1) {
+      (Math.random() < 0.6 ? rock : buoy)(rand(-LANE, LANE), SPAWN_Z, rand(0.8, 1.2));
+    } else if (r < 0.6) {
+      const g = rand(-4.5, 4.5);
+      [g - 3.6, g + 3.6].forEach(x => { if (Math.abs(x) <= LANE + 0.5) buoy(x, SPAWN_Z); });
+    } else if (r < 0.78 && diff > 0.3) {
+      // a low reef across the wave: jump it or thread the gap
+      const gap = rand(-5, 5);
+      for (let x = -LANE; x <= LANE; x += 2.1) if (Math.abs(x - gap) > 1.9) rock(x, SPAWN_Z, 0.65);
     } else {
-      const m = new THREE.Mesh(G.fin, MT.fin); m.scale.set(0.35, 1, 1);
-      addEnt({ kind: 'fin', mesh: m, x, z: -150, r: 0.55, yOff: 0.4, phase: rand(0, 6), baseX: x, swing: rand(2, 4) });
+      fin(rand(-4, 4), SPAWN_Z);
     }
   }
-  function spawnBottle() {
-    let ci;
-    const n = nails[cur];
-    if (n && !n.done && Math.random() < 0.55) ci = n.target;
-    else ci = Math.floor(Math.random() * COLORS.length);
+  function bottle(x, z, ci) {
     const m = new THREE.Group();
-    m.add(new THREE.Mesh(G.bottle, bottleMats[ci]));
+    let ring;
+    if (ci < 0) {
+      m.add(new THREE.Mesh(G.bottle, MT.gold));
+      const s = new THREE.Mesh(G.star, MT.white); s.position.y = 0.9; m.add(s);
+      ring = new THREE.Mesh(G.ring, goldRing);
+    } else {
+      m.add(new THREE.Mesh(G.bottle, bottleMats[ci]));
+      ring = new THREE.Mesh(G.ring, ringMats[ci]);
+    }
     const cap = new THREE.Mesh(G.cap, MT.cap); cap.position.y = 0.55; m.add(cap);
-    const ring = new THREE.Mesh(G.ring, ringMats[ci]); ring.rotation.x = Math.PI / 2; ring.position.y = -0.1; m.add(ring);
+    ring.rotation.x = Math.PI / 2; ring.position.y = -0.1; m.add(ring);
     m.scale.setScalar(1.25);
-    addEnt({ kind: 'bottle', mesh: m, x: rand(-LANE, LANE), z: -150, r: 0.95, yOff: 0.9, phase: rand(0, 6), color: ci });
+    addEnt({ kind: 'bottle', mesh: m, x, z, r: 0.95, yOff: 0.9, phase: rand(0, 6), color: ci });
+  }
+  function spawnBottles() {
+    const n = nails[cur];
+    let ci;
+    const r = Math.random();
+    if (r < 0.07) ci = -1;
+    else if (n && !n.done && r < 0.62) ci = n.target;
+    else ci = Math.floor(Math.random() * COLORS.length);
+    const x = rand(-LANE + 0.5, LANE - 0.5);
+    if (ci >= 0 && Math.random() < 0.25) { for (let k = 0; k < 3; k++) bottle(x, SPAWN_Z - k * 4, ci); }
+    else bottle(x, SPAWN_Z, ci);
   }
   function clearEnts() { ents.forEach(e => scene.remove(e.mesh)); ents = []; }
 
   // ---------- game state ----------
   let state = 'title';
   let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
-  let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
-  let brush = null, nails = [], cur = 0, orderWait = 0;
-  let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false;
+  let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, happy = 0, orderNo = 0;
+  let brush = null, liquid = 0, glitter = false, nails = [], cur = 0, orderWait = 0, orderTime = 0;
+  let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
   let nextBig = 20, bigLeft = 0;
   const keys = { left: false, right: false, paint: false };
 
@@ -414,17 +557,18 @@ body.touch #pad {
     if (orderNo === 1 || r < 0.3) { const c = pick(); targets = [c, c, c, c, c]; }
     else if (r < 0.7) { const a = pick(); let b = pick(); while (b === a) b = pick(); targets = [a, b, a, b, a]; }
     else { const s = COLORS.map((_, i) => i).sort(() => Math.random() - 0.5); targets = s.slice(0, 5); }
-    nails = targets.map(t => ({ target: t, color: null, progress: 0, qAcc: 0, qT: 0, done: false, result: null }));
-    cur = 0;
+    nails = targets.map(makeNail);
+    cur = 0; orderTime = 0;
     $('orderNo').textContent = orderNo;
   }
 
   function resetGame() {
     clearEnts();
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18;
-    score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; perfects = 0; ordersDone = 0; orderNo = 0;
-    brush = null; orderWait = 0; obsTimer = 2.2; botTimer = 0.6; invuln = 0; shake = 0;
-    nextBig = rand(18, 24); bigLeft = 0; bigAmt = 0;
+    score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; perfects = 0; ordersDone = 0; happy = 0; orderNo = 0;
+    brush = null; liquid = 0; glitter = false; orderWait = 0; obsTimer = 2.4; botTimer = 0.5; invuln = 0; shake = 0; drift = 0;
+    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0;
+    popQ.length = 0;
     newOrder();
   }
 
@@ -441,36 +585,129 @@ body.touch #pad {
   }
   const sfx = {
     pick: () => { beep(880, 0.12, 'triangle'); beep(1320, 0.15, 'triangle', 0.1, 1, 0.07); },
-    hit: () => { beep(160, 0.35, 'sawtooth', 0.15, 0.4); },
+    gold: () => [1047, 1319, 1568, 2093].forEach((f, i) => beep(f, 0.12, 'triangle', 0.08, 1, i * 0.05)),
+    hit: () => beep(160, 0.35, 'sawtooth', 0.15, 0.4),
     jump: () => beep(420, 0.18, 'sine', 0.08, 1.8),
+    stroke: () => beep(1800, 0.06, 'sine', 0.02, 0.6),
     perfect: () => [784, 988, 1175, 1568].forEach((f, i) => beep(f, 0.18, 'triangle', 0.1, 1, i * 0.07)),
     good: () => { beep(660, 0.15, 'triangle'); beep(880, 0.2, 'triangle', 0.1, 1, 0.08); },
     bad: () => beep(300, 0.3, 'square', 0.06, 0.7),
     order: () => [523, 659, 784, 1047, 1319].forEach((f, i) => beep(f, 0.22, 'triangle', 0.1, 1, i * 0.08)),
   };
+  // soft "brushing" noise while painting
+  let brushNoise = null;
+  function setBrushSound(on) {
+    if (!ac) return;
+    if (!brushNoise) {
+      const buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+      const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 0.8;
+      const g = ac.createGain(); g.gain.value = 0;
+      src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
+      brushNoise = g;
+    }
+    brushNoise.gain.setTargetAtTime(on ? 0.035 : 0, ac.currentTime, 0.04);
+  }
 
   // ---------- HUD ----------
+  const popQ = [];
   let popTimer = 0, hintTimer = 0, lastHint = '';
-  function pop(text, color) {
-    const el = $('pop'); el.textContent = text; el.style.color = color || '#fff';
-    el.classList.add('show'); popTimer = 1.1;
+  function showNextPop() {
+    const el = $('pop'); const it = popQ.shift();
+    if (!it) { el.classList.remove('show'); return; }
+    el.textContent = it[0]; el.style.color = it[1] || '#fff';
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    popTimer = popQ.length ? 0.8 : 1.15;
   }
+  function pop(text, color) { popQ.push([text, color]); if (popTimer <= 0) showNextPop(); }
   function hint(text) {
-    if (lastHint === text && hintTimer > 0.6) { hintTimer = 1; return; }
+    if (lastHint === text && hintTimer > 0.5) { hintTimer = 1; return; }
     lastHint = text; $('hint').textContent = text; $('hint').classList.add('show'); hintTimer = 1;
   }
   function flash() { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.35; requestAnimationFrame(() => { f.style.transition = 'opacity .4s'; f.style.opacity = 0; }); }
 
-  const hand = $('hand'), hctx = hand.getContext('2d');
-  function sizeHand() {
-    const r = hand.getBoundingClientRect(); const d = Math.min(devicePixelRatio, 2);
-    hand.width = Math.max(1, r.width * d); hand.height = Math.max(1, r.height * d);
-  }
   function rr(c, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
     c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
     c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
   }
+  function fitCanvas(cv) {
+    const r = cv.getBoundingClientRect(); const d = Math.min(devicePixelRatio, 2);
+    cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
+  }
+  const hand = $('hand'), hctx = hand.getContext('2d');
+  const view = $('nailView'), vctx = view.getContext('2d');
+
+  // brush position on the zoomed nail (for drawing)
+  let bx = 80, by = 146;
+
+  function drawNailView() {
+    const c = vctx, s = view.width / NW;
+    c.setTransform(s, 0, 0, s, 0, 0);
+    c.fillStyle = '#fde9e4'; c.fillRect(0, 0, NW, NH);
+    const n = nails[cur] && !nails[cur].done ? nails[cur] : (nails[cur - 1] || nails[cur]);
+    // finger
+    c.fillStyle = '#f2c3a0'; c.strokeStyle = '#15304a'; c.lineWidth = 2;
+    rr(c, 30, 18, 100, 230, 50); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(200,120,100,.25)'; c.beginPath(); c.ellipse(80, 152, 34, 12, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#f8e0d8'; nailPath(c); c.fill();
+    if (!n) return;
+    c.drawImage(n.cv, 0, 0);
+    c.lineWidth = 1.5; c.strokeStyle = 'rgba(150,90,80,.55)'; nailPath(c); c.stroke();
+    // glossy highlight on finished/wet polish
+    if (n.done) {
+      c.save(); nailPath(c); c.clip();
+      c.globalAlpha = n.wet > 0 ? 0.55 + 0.2 * Math.sin(T * 6) : 0.35;
+      c.fillStyle = '#fff'; c.beginPath(); c.ellipse(67, 82, 6, 26, -0.15, 0, Math.PI * 2); c.fill();
+      c.restore();
+      if (n.glitter) drawSparkles(c, 50, 40, 60, 110, 10);
+    } else if (n.glitter) drawSparkles(c, 50, 40, 60, 110, 5);
+    if (n.done) {
+      if (n.wet > 0) {
+        c.fillStyle = '#15304a'; c.font = '800 12px "M PLUS Rounded 1c", sans-serif'; c.textAlign = 'center';
+        c.fillText(`かわかし中 ${n.wet.toFixed(1)}`, 80, 188);
+      }
+      return;
+    }
+    // stroke guides
+    for (let k = 0; k < 3; k++) {
+      const L = LANES[k];
+      const isCur = k === n.lane;
+      if (n.strokes >= 3 && !isCur) continue;
+      if (n.strokes < 3 && k < n.strokes) continue;
+      c.setLineDash([4, 4]); c.lineWidth = isCur ? 2 : 1;
+      c.strokeStyle = isCur ? 'rgba(21,48,74,.8)' : 'rgba(21,48,74,.25)';
+      c.beginPath(); c.moveTo(L.x, L.y0); c.lineTo(L.x, L.y1); c.stroke(); c.setLineDash([]);
+      if (isCur) {
+        c.fillStyle = 'rgba(21,48,74,.8)';
+        c.beginPath(); c.moveTo(L.x, L.y1 - 8); c.lineTo(L.x - 5, L.y1); c.lineTo(L.x + 5, L.y1); c.fill();
+      }
+    }
+    // the brush
+    const L = LANES[n.lane];
+    const hx = painting ? bx : L.x + drift * 0.5;
+    const hy = painting ? by : L.y0 + 10 + Math.sin(T * 3) * 2;
+    const w = brushWidth();
+    c.save(); c.translate(hx, hy); c.rotate(clamp(drift * 0.02, -0.3, 0.3));
+    c.globalAlpha = painting ? 1 : 0.6;
+    c.fillStyle = '#15304a'; c.fillRect(-6, 14, 12, 60);           // handle
+    c.fillStyle = '#c9d2da'; c.fillRect(-w / 2 + 2, 4, w - 4, 11);   // ferrule
+    c.fillStyle = brush == null ? '#e4e4e4' : COLORS[brush].hex;    // bristles
+    rr(c, -w / 2, -5, w, 11, 4); c.fill();
+    c.strokeStyle = '#15304a'; c.lineWidth = 1.2; c.stroke();
+    c.restore();
+  }
+  function drawSparkles(c, x, y, w, h, count) {
+    c.save(); nailPath(c); c.clip();
+    for (let i = 0; i < count; i++) {
+      const sx = x + ((i * 37.7) % w), sy = y + ((i * 53.3 + T * 4) % h);
+      const a = 0.5 + 0.5 * Math.sin(T * 5 + i);
+      c.fillStyle = `rgba(255,248,210,${a})`; c.fillRect(sx, sy, 2, 2);
+    }
+    c.restore();
+  }
+
   const FINGERS = [ // [cx, tipY, w, angle]  thumb, index, middle, ring, pinky
     [40, 52, 20, -0.55], [62, 18, 18, -0.06], [84, 10, 18, 0], [106, 16, 18, 0.06], [126, 32, 16, 0.14],
   ];
@@ -478,35 +715,33 @@ body.touch #pad {
     const c = hctx, s = hand.width / 164;
     c.setTransform(s, 0, 0, s, 0, 0); c.clearRect(0, 0, 164, 128);
     c.lineWidth = 2; c.strokeStyle = '#15304a';
-    // palm
     c.fillStyle = '#f2c3a0';
     rr(c, 50, 62, 88, 80, 22); c.fill(); c.stroke();
     FINGERS.forEach(([cx, ty, w, a], i) => {
       c.save(); c.translate(cx, 92); c.rotate(a);
       const len = 92 - ty;
       c.fillStyle = '#f2c3a0'; rr(c, -w / 2, -len, w, len + 6, w / 2); c.fill(); c.stroke();
-      // nail
       const n = nails[i]; const nw = w - 6, nh = 17, nx = -nw / 2, ny = -len + 3;
+      // show the real painted pixels, spill included, shrunk onto the fingertip
+      const kx = nw / 60, ky = nh / 108;
+      c.save(); rr(c, -w / 2 + 1, -len + 1, w - 2, nh + 8, w / 2); c.clip();
       c.fillStyle = '#f8e3da'; rr(c, nx, ny, nw, nh, nw / 2); c.fill();
+      if (n) c.drawImage(n.cv, 50 - 4 / kx, 40 - 3 / ky, (nw + 8) / kx, (nh + 8) / ky, nx - 4, ny - 3, nw + 8, nh + 8);
+      c.restore();
       if (n) {
-        if (n.progress > 0 && n.color != null) {
-          c.save(); rr(c, nx, ny, nw, nh, nw / 2); c.clip();
-          c.fillStyle = COLORS[n.color].hex; const fh = nh * n.progress; c.fillRect(nx, ny + nh - fh, nw, fh); c.restore();
-          if (n.done && n.result === 'messy') {
-            c.fillStyle = COLORS[n.color].hex; c.globalAlpha = 0.8;
-            c.beginPath(); c.arc(nx + nw + 1, ny + nh - 2, 3.5, 0, 7); c.arc(nx - 1, ny + 6, 2.5, 0, 7); c.fill(); c.globalAlpha = 1;
-          }
-        }
-        // target outline
         c.setLineDash(n.done ? [] : [3, 2]); c.lineWidth = 2.2; c.strokeStyle = COLORS[n.target].hex;
         rr(c, nx, ny, nw, nh, nw / 2); c.stroke(); c.setLineDash([]);
+        if (n.wet > 0) {
+          c.globalAlpha = 0.6 + 0.3 * Math.sin(T * 6 + i); c.fillStyle = '#fff';
+          c.beginPath(); c.ellipse(nx + nw * 0.32, ny + nh * 0.45, 1.6, 4.5, 0, 0, 7); c.fill(); c.globalAlpha = 1;
+        }
         if (i === cur && !n.done && state === 'play') {
           const pulse = 0.5 + 0.5 * Math.sin(T * 8);
           c.lineWidth = 1.5; c.strokeStyle = `rgba(21,48,74,${0.4 + pulse * 0.6})`; rr(c, nx - 3, ny - 3, nw + 6, nh + 6, nw / 2 + 3); c.stroke();
         }
         if (n.done) {
-          const ok = n.result === 'perfect' || n.result === 'good';
-          c.fillStyle = ok ? '#2fb57a' : '#e8344a';
+          const ok = (n.result === 'perfect' || n.result === 'good') && !n.smudged;
+          c.fillStyle = n.result === 'perfect' && !n.smudged ? '#ffb400' : ok ? '#2fb57a' : '#e8344a';
           c.beginPath(); c.arc(0, ny - 6, 5, 0, 7); c.fill();
           c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.beginPath();
           if (ok) { c.moveTo(-2.4, ny - 6); c.lineTo(-0.6, ny - 4.2); c.lineTo(2.6, ny - 8); }
@@ -517,34 +752,44 @@ body.touch #pad {
       c.lineWidth = 2; c.strokeStyle = '#15304a';
       c.restore();
     });
-    c.fillStyle = '#f2c3a0'; c.fillRect(52, 90, 84, 12); // hide finger bases
+    c.fillStyle = '#f2c3a0'; c.fillRect(52, 90, 84, 12);
   }
 
   function updateHUD() {
     $('score').textContent = score.toLocaleString();
     const tEl = $('time'); tEl.textContent = Math.max(0, timeLeft).toFixed(1); tEl.classList.toggle('low', timeLeft < 15);
     const sw = $('swatch');
-    if (brush == null) { sw.style.background = ''; $('brushName').textContent = 'なし'; }
+    if (brush == null) { sw.style.background = ''; $('brushName').textContent = 'ポリッシュなし'; }
     else { sw.style.background = COLORS[brush].hex; $('brushName').textContent = COLORS[brush].name; }
-    const n = nails[cur];
-    $('progBar').firstElementChild.style.width = (n && !n.done ? n.progress * 100 : (orderWait > 0 ? 100 : 0)) + '%';
-    if (n && !n.done && n.color != null) $('progBar').firstElementChild.style.background = COLORS[n.color].hex;
+    $('glit').hidden = !glitter;
+    const lb = $('liqBar').firstElementChild;
+    lb.style.width = (liquid * 100) + '%';
+    lb.style.background = brush == null ? '#ccc' : COLORS[brush].hex;
     const steady = 1 - wob;
     const wb = $('wobBar').firstElementChild;
     wb.style.width = (steady * 100) + '%';
     wb.style.background = steady > 0.72 ? '#35c08a' : steady > 0.45 ? '#ffc93c' : '#e8344a';
-    $('combo').textContent = combo >= 2 ? `${combo} コンボ!` : '';
+    $('combo').textContent = combo >= 2 ? `${combo} コンボ! ×${(1 + Math.min(combo, 10) * 0.1).toFixed(1)}` : '';
+    const n = nails[cur];
     if (n && !n.done) {
       const w = $('wantName'); w.textContent = COLORS[n.target].name; w.style.background = COLORS[n.target].hex;
+      $('fingerName').textContent = FINGER_NAMES[cur];
+      $('strokeInfo').textContent = n.strokes < 3 ? `${n.strokes + 1}/3 ${LANES[n.lane].name}` : `タッチアップ`;
+      $('covTxt').textContent = `ぬれた ${Math.round(n.cov * 100)}%`;
+      const sp = $('spillTxt'); sp.textContent = `はみだし ${Math.round(n.spill * 100)}%`; sp.classList.toggle('bad', n.spill > 0.05);
+    } else if (orderWait > 0) {
+      $('strokeInfo').textContent = 'お会計中…';
     }
-    // 3D nails
+    $('tip').textContent = orderWait > 0 ? 'つぎのお客さん…' : `はやく仕上げるとチップ +${tipNow()}`;
     nails.forEach((nn, i) => {
-      if (nn.color != null && nn.progress > 0.05) nail3D[i].material.color.set(COLORS[nn.color].hex);
+      if (nn.used != null && (nn.cov > 0.1 || nn.done)) nail3D[i].material.color.set(COLORS[nn.used].hex);
       else nail3D[i].material.color.set(0xf3d9cf);
     });
     brushTipMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
     drawHand();
+    drawNailView();
   }
+  const tipNow = () => Math.max(0, Math.round(400 - orderTime * 14));
 
   // ---------- gameplay ----------
   function jump() {
@@ -552,67 +797,123 @@ body.touch #pad {
     vy = 8.2; sfx.jump();
     for (let i = 0; i < 14; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(2, 5), rand(0, 4));
   }
+  const brushWidth = () => BRUSH_W * (0.5 + 0.5 * clamp(liquid / 0.3, 0, 1));
 
   function finishNail() {
     const n = nails[cur];
-    n.progress = 1; n.done = true;
-    const q = n.qT > 0 ? n.qAcc / n.qT : 0;
-    const ok = n.color === n.target;
+    evalNail(n);
+    n.done = true; n.wet = 2.6; n.sp = 0;
+    const { cov, spill } = n;
     let base = 0, label, col;
-    if (!ok) { n.result = 'wrong'; label = '色ちがい…'; combo = 0; col = '#ff9fb0'; sfx.bad(); }
-    else if (q > 0.72) { n.result = 'perfect'; base = 300; combo++; perfects++; label = 'パーフェクト！'; col = '#ffd23f'; sfx.perfect(); }
-    else if (q > 0.45) { n.result = 'good'; base = 150; combo++; label = 'グッド'; col = '#ffffff'; sfx.good(); }
-    else { n.result = 'messy'; base = 60; combo = 0; label = 'はみだし…'; col = '#ffd0dc'; sfx.bad(); }
-    const mult = (1 + Math.min(combo, 10) * 0.1) * (bigAmt > 0.5 ? 2 : 1);
+    if (n.wrong > 0.3 && cov < 0.6) { n.result = 'wrong'; label = '色ちがい…'; combo = 0; col = '#ff9fb0'; sfx.bad(); }
+    else if (cov >= 0.88 && spill <= 0.03 && n.strokes === 3) {
+      n.result = 'perfect'; base = 320; combo++; perfects++; label = '3ストローク パーフェクト！'; col = '#ffd23f'; sfx.perfect();
+    } else if (cov >= 0.8 && spill <= 0.08) {
+      n.result = 'good'; base = Math.round(120 + 160 * cov - 700 * spill); combo++; label = 'グッド'; col = '#ffffff'; sfx.good();
+    } else {
+      n.result = 'messy'; base = Math.max(20, Math.round(180 * cov - 900 * spill)); combo = 0;
+      label = spill > 0.08 ? 'はみだし…' : 'ムラあり…'; col = '#ffd0dc'; sfx.bad();
+    }
+    const mult = (1 + Math.min(combo, 10) * 0.1) * (bigAmt > 0.5 ? 2 : 1) * (n.glitter ? 1.5 : 1);
     const pts = Math.round(base * mult);
     score += pts;
     pop(pts ? `${label} +${pts}` : label, col);
     cur++;
-    if (cur >= 5) {
-      ordersDone++;
-      const allOk = nails.every(x => x.result === 'perfect' || x.result === 'good');
-      if (allOk) {
-        const bonus = Math.round(500 * (bigAmt > 0.5 ? 2 : 1)); score += bonus;
-        setTimeout(() => { if (state === 'play') { pop(`お客さん大満足！ +${bonus}`, '#ffd23f'); sfx.order(); } }, 700);
-      } else {
-        setTimeout(() => { if (state === 'play') pop('お会計ありがとう！', '#ffffff'); }, 700);
-      }
-      orderWait = 1.6;
+    if (cur >= 5) finishOrder();
+  }
+
+  function finishOrder() {
+    ordersDone++;
+    const allOk = nails.every(x => (x.result === 'perfect' || x.result === 'good') && !x.smudged);
+    const tip = tipNow();
+    const m = bigAmt > 0.5 ? 2 : 1;
+    if (allOk) {
+      happy++;
+      const bonus = 500 * m + tip;
+      score += bonus; timeLeft += 5;
+      pop(`お客さん大満足！ +${bonus}`, '#ffd23f');
+      pop('ボーナスタイム +5秒', '#9ff3d0');
+      setTimeout(sfx.order, 500);
+    } else {
+      score += tip; timeLeft += 2;
+      pop(`お会計 チップ +${tip}`, '#ffffff');
+      pop('+2秒', '#9ff3d0');
     }
+    orderWait = 2.6;
   }
 
   function doPaint(dt) {
+    const was = painting;
     painting = false;
-    if (!keys.paint || orderWait > 0) return;
-    if (jumpY > 0.05) { hint('空中ではぬれないよ'); return; }
-    if (brush == null) { hint('まずはネイルのボトルをひろってね'); return; }
+    if (!keys.paint || orderWait > 0) { if (was) setBrushSound(false); return; }
     const n = nails[cur]; if (!n || n.done) return;
-    if (n.progress > 0 && n.color !== brush) { n.progress = 0; n.qAcc = 0; n.qT = 0; hint('ちがう色なので、ぬりなおし'); }
-    n.color = brush; painting = true;
-    n.progress += dt * 0.6;
-    n.qAcc += (1 - wob) * dt; n.qT += dt;
-    if (n.color !== n.target && n.progress > 0.15) hint(`注文は「${COLORS[n.target].name}」だよ`);
-    if (n.progress >= 1) finishNail();
+    if (jumpY > 0.05) { hint('空中ではぬれないよ'); setBrushSound(false); return; }
+    if (brush == null) { hint('まずはネイルのボトルをひろってね'); return; }
+    if (liquid <= 0.01) { hint('ポリッシュがなくなった！ ボトルで補充'); setBrushSound(false); return; }
+    painting = true;
+    if (!was) setBrushSound(true);
+    if (brush !== n.target) hint(`注文は「${COLORS[n.target].name}」！ ちがう色だよ`);
+    if (glitter) n.glitter = true;
+    n.used = brush;
+    const L = LANES[n.lane];
+    const len = L.y0 - L.y1;
+    const prevY = lerp(L.y0, L.y1, n.sp), prevX = L.x + drift;
+    n.sp = Math.min(1, n.sp + dt * 1.45);
+    by = lerp(L.y0, L.y1, n.sp);
+    bx = L.x + drift;
+    const w = brushWidth();
+    const steps = Math.max(1, Math.ceil(Math.abs(prevY - by) / 1.5));
+    for (let k = 1; k <= steps; k++) {
+      const t = k / steps;
+      dab(n, lerp(prevX, bx, t), lerp(prevY, by, t), w, brush, 0.5);
+    }
+    if (glitter && Math.random() < 0.6) {
+      n.ctx.fillStyle = 'rgba(255,245,200,.9)'; n.ctx.fillRect(bx + rand(-w / 2, w / 2), by + rand(-3, 3), 1.2, 1.2);
+    }
+    liquid = Math.max(0, liquid - (Math.abs(prevY - by) / len) * 0.12);
+    n.evalT -= dt;
+    if (n.evalT <= 0) { evalNail(n); n.evalT = 0.2; }
+    if (n.sp >= 1) {
+      // one stroke finished: lift the brush
+      n.strokes++; n.sp = 0; sfx.stroke();
+      evalNail(n);
+      if (n.strokes >= 3 && (n.cov >= 0.88 || n.strokes >= 5)) { finishNail(); setBrushSound(false); painting = false; return; }
+      if (n.strokes < 3) n.lane = n.strokes;
+      else {
+        // touch-up goes where the polish is thinnest
+        let k = 0; n.bandCov.forEach((v, i) => { if (v < n.bandCov[k]) k = i; }); n.lane = k;
+        hint(`ムラがある！ ${LANES[k].name}をタッチアップ`);
+      }
+    }
   }
 
   function onHit() {
     invuln = 1.6; shake = 0.6; speed *= 0.6; combo = 0;
     timeLeft -= 3; sfx.hit(); flash();
     const n = nails[cur];
-    if (n && !n.done && n.progress > 0) { n.progress = 0; n.qAcc = 0; n.qT = 0; pop('ぶつかって はみだした！ -3秒', '#ffd0dc'); }
-    else pop('ドボン！ -3秒', '#ffd0dc');
+    let msg = 'ドボン！ -3秒';
+    if (n && !n.done && (n.sp > 0 || n.strokes > 0) && n.used != null) { smear(n, n.used); n.sp = 0; evalNail(n); msg = 'ハケがすべった！ -3秒'; }
+    const wet = nails.filter(x => x.done && x.wet > 0 && !x.smudged);
+    if (wet.length) {
+      wet.forEach(x => { smear(x, x.used); x.smudged = true; evalNail(x); });
+      score = Math.max(0, score - 80 * wet.length);
+      msg = `かわく前にヨレた… -${80 * wet.length}`;
+    }
+    pop(msg, '#ffd0dc');
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
 
   function endGame() {
     state = 'over';
+    setBrushSound(false);
     let best = 0;
-    try { best = +localStorage.getItem('nailsurf-best') || 0; if (score > best) { best = score; localStorage.setItem('nailsurf-best', String(score)); } } catch (e) { best = Math.max(best, score); }
-    const rank = score >= 7000 ? 'S' : score >= 4500 ? 'A' : score >= 2500 ? 'B' : 'C';
+    try { best = +localStorage.getItem('nailsurf-best2') || 0; if (score > best) { best = score; localStorage.setItem('nailsurf-best2', String(score)); } } catch (e) { best = Math.max(best, score); }
+    const rank = score >= 14000 ? 'S' : score >= 9000 ? 'A' : score >= 5000 ? 'B' : 'C';
     $('rank').textContent = rank;
     $('rScore').textContent = score.toLocaleString();
     $('rPerfect').textContent = perfects;
     $('rOrders').textContent = ordersDone + ' 人';
+    $('rHappy').textContent = happy + ' 人';
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true;
     keys.paint = keys.left = keys.right = false;
@@ -624,11 +925,10 @@ body.touch #pad {
     T += dt;
     const playing = state === 'play';
 
-    // steering
     let input = 0;
     if (playing) input = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     else if (state === 'title') input = clamp(Math.sin(T * 0.7) * 1.4 - px * 0.25, -1, 1);
-    const accel = (painting ? 26 : 42);
+    const accel = (painting ? 30 : 44);
     vx += input * accel * dt;
     vx *= Math.pow(0.04, dt);
     vx = clamp(vx, -11, 11);
@@ -636,38 +936,42 @@ body.touch #pad {
     if (px < -LANE) { px = -LANE; vx = Math.max(0, vx); }
     if (px > LANE) { px = LANE; vx = Math.min(0, vx); }
 
-    // jump physics
-    if (jumpY > 0 || vy > 0) { vy -= 22 * dt; jumpY += vy * dt; if (jumpY <= 0) { jumpY = 0; vy = 0; for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3)); } }
+    if (jumpY > 0 || vy > 0) {
+      vy -= 22 * dt; jumpY += vy * dt;
+      if (jumpY <= 0) { jumpY = 0; vy = 0; landJolt = 0.5; for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3)); }
+    }
+    landJolt = Math.max(0, landJolt - dt * 1.5);
 
-    // forward speed & big wave
     if (playing) {
-      elapsed += dt; timeLeft -= dt;
-      const target = lerp(18, 30, clamp(elapsed / GAME_TIME, 0, 1));
+      elapsed += dt; timeLeft -= dt; orderTime += orderWait > 0 ? 0 : dt;
+      const target = lerp(18, 30, clamp(elapsed / 100, 0, 1));
       speed += (target - speed) * Math.min(1, dt * 0.8);
-      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft <= 0) { $('big').hidden = true; nextBig = elapsed + rand(16, 22); } }
+      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft <= 0) { $('big').hidden = true; nextBig = elapsed + rand(18, 24); } }
       else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 7; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
     } else speed += (16 - speed) * Math.min(1, dt);
     bigAmt += ((bigLeft > 0 ? 1 : 0) - bigAmt) * Math.min(1, dt * 1.2);
     dist += speed * dt;
 
-    // wobble = how shaky the painting hand is
-    const waveShake = bigAmt * (0.3 + 0.25 * Math.sin(T * 7));
-    const target = clamp(Math.abs(vx) / 8 + Math.abs(input) * 0.12 + waveShake + (invuln > 1 ? 0.6 : 0), 0, 1);
-    wob += (target - wob) * Math.min(1, dt * 8);
+    // how shaky the painting hand is
+    const waveShake = bigAmt * (0.28 + 0.22 * Math.sin(T * 7));
+    const wTarget = clamp(Math.abs(vx) / 8 + Math.abs(input) * 0.12 + waveShake + landJolt + (invuln > 1 ? 0.6 : 0), 0, 1);
+    wob += (wTarget - wob) * Math.min(1, dt * 8);
+    // the brush drifts off its line with body motion and shake; a steady hand pulls it back
+    const driftTarget = vx * 1.5 + (Math.sin(T * 7.3) + Math.sin(T * 12.7 + 1.3)) * wob * 7;
+    drift += (driftTarget - drift) * Math.min(1, dt * 6);
 
     if (playing) {
       if (orderWait > 0) { orderWait -= dt; if (orderWait <= 0) newOrder(); }
       doPaint(dt);
-      // spawns
+      nails.forEach(n => { if (n.wet > 0) n.wet = Math.max(0, n.wet - dt); });
       const diff = clamp(elapsed / GAME_TIME, 0, 1);
       obsTimer -= dt; botTimer -= dt;
-      if (obsTimer <= 0) { spawnObstacle(); if (diff > 0.5 && Math.random() < 0.35) spawnObstacle(); obsTimer = lerp(1.35, 0.7, diff) * rand(0.7, 1.3); }
-      if (botTimer <= 0) { spawnBottle(); botTimer = rand(0.9, 1.5) * (bigAmt > 0.5 ? 0.7 : 1); }
+      if (obsTimer <= 0) { spawnObstacles(diff); obsTimer = lerp(1.4, 0.75, diff) * rand(0.75, 1.25); }
+      if (botTimer <= 0) { spawnBottles(); botTimer = rand(1.0, 1.6) * (bigAmt > 0.5 ? 0.7 : 1); }
       if (invuln > 0) invuln -= dt;
       if (timeLeft <= 0) { timeLeft = 0; endGame(); }
     } else painting = false;
 
-    // surfer placement on the wave
     const sy = waveH(px, 0);
     const dhx = (waveH(px + 0.5, 0) - waveH(px - 0.5, 0));
     const dhz = (waveH(px, -0.8) - waveH(px, 0.8)) / 1.6;
@@ -675,28 +979,21 @@ body.touch #pad {
     board.rotation.set(-Math.atan(dhz) * 0.8 + (jumpY > 0 ? -0.25 : 0), -vx * 0.05, Math.atan(dhx) * 0.9 - vx * 0.035);
     rider.rotation.y = Math.PI * 0.02;
     rider.rotation.z = -Math.abs(vx) * 0.01;
-    rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02;
+    rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02 - (painting ? 0.08 : 0);
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
 
-    // arms: left hand held out, right hand paints
     armL.pivot.rotation.set(0, 0.55, -0.35);
     if (painting) {
-      armR.pivot.rotation.set(0, -0.95 + Math.sin(T * 22) * 0.06, -0.25 + Math.sin(T * 11) * 0.05);
-      if (Math.random() < 0.5) {
-        const wp = new THREE.Vector3(); armL.hand.getWorldPosition(wp);
-        const p = parts[pIdx]; pIdx = (pIdx + 1) % PN; Object.assign(p, { life: 0.3, x: wp.x, y: wp.y + 0.1, z: wp.z, vx: rand(-0.5, 0.5), vy: 1.2, vz: rand(-0.5, 0.5) });
-      }
+      armR.pivot.rotation.set(0, -0.95 + Math.sin(T * 22) * 0.06 * (0.3 + wob), -0.25 + Math.sin(T * 11) * 0.05);
     } else {
       armR.pivot.rotation.set(0, 0.9 - vx * 0.03, 0.45 + Math.sin(T * 2) * 0.08);
     }
 
-    // trailing spray
     if (jumpY === 0) {
       const n = 2 + Math.abs(vx) * 0.4;
       for (let i = 0; i < n; i++) emit(px + rand(-0.4, 0.4) - vx * 0.03, sy + 0.1, 1.4 + rand(0, 0.5), rand(-1.5, 1.5) - vx * 0.25, rand(1.5, 3.5), rand(2, 5));
     }
 
-    // entities
     for (const e of ents) {
       e.z += speed * dt;
       if (e.kind === 'fin') e.x = clamp(e.baseX + Math.sin(T * 1.6 + e.phase) * e.swing, -LANE, LANE);
@@ -708,7 +1005,12 @@ body.touch #pad {
       if (playing && !e.gone && Math.abs(e.z) < 1.3 && Math.abs(e.x - px) < e.r + 0.45) {
         if (e.kind === 'bottle') {
           if (jumpY < 2.2) {
-            e.gone = true; brush = e.color; score += 10; sfx.pick();
+            e.gone = true; score += 10;
+            if (e.color < 0) { glitter = true; sfx.gold(); pop('ラメをゲット！ つぎのツメ ×1.5', '#ffd23f'); }
+            else {
+              if (brush != null && brush !== e.color && liquid > 0.05) hint(`ハケを${COLORS[e.color].name}に入れかえた`);
+              brush = e.color; liquid = 1; sfx.pick();
+            }
             for (let i = 0; i < 16; i++) emit(e.x, y + 1, e.z, rand(-3, 3), rand(1, 5), rand(-3, 3));
           }
         } else if (invuln <= 0 && jumpY < 0.9) { e.gone = true; onHit(); }
@@ -720,7 +1022,6 @@ body.touch #pad {
       return keep;
     });
 
-    // particles
     for (let i = 0; i < PN; i++) {
       const p = parts[i];
       if (p.life > 0) {
@@ -733,14 +1034,12 @@ body.touch #pad {
 
     updateOcean();
 
-    // camera
     shake = Math.max(0, shake - dt);
     const sh = shake * 0.5 + bigAmt * 0.06;
     camera.position.set(px * 0.55 + 1.2 + rand(-sh, sh), sy * 0.6 + 4.2 + jumpY * 0.4 + rand(-sh, sh), 7.8);
     camera.lookAt(px * 0.75, sy * 0.5 + 1.2, -9);
 
-    // HUD timers
-    if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) $('pop').classList.remove('show'); }
+    if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
     if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) $('hint').classList.remove('show'); }
     if (playing) updateHUD();
   }
@@ -786,10 +1085,9 @@ body.touch #pad {
     resetGame();
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
-    $('status').hidden = false; $('order').hidden = false;
-    sizeHand(); updateHUD();
+    $('left').hidden = false; $('order').hidden = false;
+    fitCanvas(hand); fitCanvas(view); updateHUD();
     pop('お客さんが来たよ！', '#ffffff');
-    renderer.domElement.focus?.();
   }
   $('startBtn').addEventListener('click', start);
   $('retryBtn').addEventListener('click', start);
@@ -797,8 +1095,9 @@ body.touch #pad {
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-    sizeHand();
+    fitCanvas(hand); fitCanvas(view);
   });
+
 
   newOrder();
   requestAnimationFrame(loop);
