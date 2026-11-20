@@ -75,6 +75,12 @@ body {
 }
 #big small { font-size: .55em; color: #fff; }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
+#vig { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(6, 30, 62, .38) 100%); }
+/* food that hits the "camera": blobs on the edges of the screen that run down and fade */
+#splats { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.splat { position: absolute; border-radius: 47% 53% 60% 40% / 45% 55% 45% 55%; opacity: .92; animation: drip 1.5s ease-in forwards; box-shadow: inset -6px -8px 0 rgba(0,0,0,.12), inset 5px 6px 0 rgba(255,255,255,.3); }
+.splat::after { content: ""; position: absolute; left: 38%; top: 80%; width: 24%; height: 90%; background: inherit; border-radius: 40% 40% 50% 50%; }
+@keyframes drip { 0% { transform: scale(.3); } 12% { transform: scale(1.1); } 100% { transform: translateY(70px) scaleY(1.25); opacity: 0; } }
 #help {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: none; white-space: nowrap;
@@ -171,9 +177,11 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   </div>
 </div>
 
-<div id="big" hidden>ビッグウェーブ！ スコア2倍<br><small>← 左の波のカベを登って、てっぺんでエアリアル！</small></div>
+<div id="big" hidden>大波が来る！<br><small>のぼって、てっぺんでジャンプ！ 乗り越えると高得点</small></div>
 <div id="pop"></div>
 <div id="hint"></div>
+<div id="vig"></div>
+<div id="splats"></div>
 <div id="flash"></div>
 <div id="help" hidden></div>
 <div id="gaugeWrap" class="card" hidden><div id="pip"></div><div id="gaugeFoot"><div id="balBar"><i id="balMark"></i></div><div id="gaugeTxt">トレーを水平に！</div></div></div>
@@ -191,7 +199,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
       <div><kbd>3</kbd><span>運ぶ間は<b>トレーを傾けて</b>バランスを取る。<b>曲がる方向に傾ける</b>とこぼれない</span></div>
     </div>
-    <p class="small">はやく、こぼさず届けるほどチップが増えるよ。届けるたびに +6秒。<br>左の大波のカベを登って、てっぺんまで行くとエアリアル！（料理を持っていると着地で大きくゆれる）</p>
+    <p class="small">はやく、こぼさず届けるほどチップが増えるよ。届けるたびに +6秒。<br>ときどき前から<b>大波</b>が来る。乗り越えると +400、てっぺんでジャンプを合わせると大ジャンプで +600、着地でさらにボーナス！<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
     <p class="small"><b>スマホ</b>：左手のスティックで移動・上にはじいてジャンプ／右手のパッドでトレーを傾ける<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ／マウスを左右に動かしてトレーを傾ける</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
@@ -316,24 +324,25 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   oceanGeo.rotateX(-Math.PI / 2);
   oceanGeo.translate(0, 0, -OL / 2 + 25);
   const oceanU = {
-    uTime: { value: 0 }, uDist: { value: 0 }, uBig: { value: 0 },
+    uTime: { value: 0 }, uDist: { value: 0 }, uBig: { value: 0 }, uRidgeZ: { value: -999 }, uRidgeH: { value: 0 },
     uSun: { value: SUN_POS.clone().normalize() },
     uFogC: { value: new THREE.Color(0xcdeef7) }, uFogN: { value: 55 }, uFogF: { value: 190 },
   };
   const WAVE_GLSL = `
-    uniform float uTime, uDist, uBig;
+    uniform float uTime, uDist, uBig, uRidgeZ, uRidgeH;
     float wallH(float x) { float d = -x - 9.5; if (d <= 0.0) return 0.0; if (d < 10.8) return d * d * 0.085; return max(0.0, 9.9 - (d - 10.8) * (d - 10.8) * 0.5); }
     float wallPart(float x, float z) { float zz = z - uDist; return wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.6); }
     float waveH(float x, float z) {
-      float zz = z - uDist; float amp = 1.0 + uBig * 0.9;
+      float zz = z - uDist; float amp = 1.0 + uBig * 0.35;
       return amp * (0.55 * sin(zz * 0.22 + x * 0.12) + 0.3 * sin(zz * 0.09 - x * 0.35 + uTime * 0.9))
         + 0.15 * sin(x * 0.6 + zz * 0.5 + uTime * 1.7)
-        + wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.6);
+        + wallH(x) * (1.0 + 0.12 * sin(zz * 0.05 + uTime) + uBig * 0.6)
+        + uRidgeH * exp(-pow((z - uRidgeZ) / 7.0, 2.0));
     }`;
   const ocean = new THREE.Mesh(oceanGeo, new THREE.ShaderMaterial({
     uniforms: oceanU,
     vertexShader: WAVE_GLSL + `
-      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase;
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase; varying float vRidge;
       void main() {
         vec3 p = position;
         float h = waveH(p.x, p.z);
@@ -341,13 +350,13 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
         float hx = waveH(p.x + e, p.z) - waveH(p.x - e, p.z);
         float hz = waveH(p.x, p.z + e) - waveH(p.x, p.z - e);
         vN = normalize(vec3(-hx, 2.0 * e, -hz));
-        p.y = h; vH = h; vWall = wallH(p.x); vBase = h - wallPart(p.x, p.z);
+        p.y = h; vH = h; vWall = wallH(p.x); vBase = h - wallPart(p.x, p.z); vRidge = uRidgeH * exp(-pow((p.z - uRidgeZ) / 7.0, 2.0));
         vec4 w = modelMatrix * vec4(p, 1.0); vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: `
-      uniform float uTime, uDist; uniform vec3 uSun, uFogC; uniform float uFogN, uFogF;
-      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase;
+      uniform float uTime, uDist, uRidgeH; uniform vec3 uSun, uFogC; uniform float uFogN, uFogF;
+      varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase; varying float vRidge;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -363,6 +372,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
         float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
         vec3 deep = vec3(0.01, 0.30, 0.50), shallow = vec3(0.06, 0.70, 0.78);
         vec3 col = mix(deep, shallow, clamp((vBase + 0.7) / 2.0, 0.0, 1.0));
+        col += vec3(0.05, 0.42, 0.36) * pow(clamp(vBase / 3.2, 0.0, 1.0), 1.5) * 0.9;   // sunlight glowing through tall water
         float wf = clamp(vWall / 9.0, 0.0, 1.0);
         col = mix(col, vec3(0.05, 0.62, 0.70), wf * 0.6);
         fres *= 1.0 - wf * 0.8;
@@ -371,7 +381,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
         vec3 Hh = normalize(uSun + V);
         col += vec3(1.0, 0.95, 0.82) * pow(max(dot(N, Hh), 0.0), 220.0) * 2.5;
         float fn = noise(uv * 2.6 + vec2(0.0, uTime * 0.4));
-        float foam = smoothstep(0.85, 1.4, vBase + fn * 0.55);
+        float foam = smoothstep(0.85, 1.4, vBase - vRidge + fn * 0.55);
+        foam = max(foam, smoothstep(0.82, 1.0, vRidge / max(uRidgeH, 0.01) + (fn - 0.5) * 0.16) * step(1.0, uRidgeH));   // white only along the crest of the big swell
         foam = max(foam, smoothstep(8.6, 10.2, vWall + fn * 1.2) * 0.9);
         foam = max(foam, smoothstep(0.8, 0.95, noise(uv * vec2(0.5, 0.22) + vec2(uTime * 0.03, 0.0))) * 0.4);
         col = mix(col, vec3(0.97, 0.99, 1.0), clamp(foam, 0.0, 1.0));
@@ -381,18 +392,87 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   }));
   scene.add(ocean);
 
-  let T = 0, dist = 0, bigAmt = 0;
+  let T = 0, dist = 0, bigAmt = 0, ridgeZ = -999, ridgeH = 0;   // ridge = the big swell rolling toward you
   function wall(x) { const d = -x - 9.5; if (d <= 0) return 0; if (d < 10.8) return d * d * 0.085; return Math.max(0, 9.9 - (d - 10.8) * (d - 10.8) * 0.5); }
   function waveH(x, z) {
     const zz = z - dist;
-    const amp = 1 + bigAmt * 0.9;
+    const amp = 1 + bigAmt * 0.35;
     return amp * (0.55 * Math.sin(zz * 0.22 + x * 0.12) + 0.3 * Math.sin(zz * 0.09 - x * 0.35 + T * 0.9))
       + 0.15 * Math.sin(x * 0.6 + zz * 0.5 + T * 1.7)
-      + wall(x) * (1 + 0.12 * Math.sin(zz * 0.05 + T) + bigAmt * 0.6);
+      + wall(x) * (1 + 0.12 * Math.sin(zz * 0.05 + T) + bigAmt * 0.6)
+      + ridgeH * Math.exp(-(((z - ridgeZ) / 7) ** 2));
   }
   function updateOcean() {
-    oceanU.uTime.value = T; oceanU.uDist.value = dist; oceanU.uBig.value = bigAmt;
+    oceanU.uTime.value = T; oceanU.uDist.value = dist; oceanU.uBig.value = bigAmt; oceanU.uRidgeZ.value = ridgeZ; oceanU.uRidgeH.value = ridgeH;
     clouds.forEach((c, i) => { c.position.x += 0.6 * (1 + i % 3) * 0.016; if (c.position.x > 300) c.position.x = -300; });
+  }
+
+  // seagulls circling
+  const gulls = [];
+  const wingGeo = new THREE.PlaneGeometry(1.5, 0.42).translate(0.75, 0, 0), gullMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, fog: false });
+  for (let i = 0; i < 8; i++) {
+    const g = new THREE.Group(); const wl = new THREE.Mesh(wingGeo, gullMat), wr = new THREE.Mesh(wingGeo, gullMat); wr.scale.x = -1;
+    wl.rotation.x = wr.rotation.x = -Math.PI / 2; const a = new THREE.Group(), b = new THREE.Group(); a.add(wl); b.add(wr); g.add(a, b);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), gullMat); body.scale.set(0.6, 0.6, 2); g.add(body);
+    scene.add(g); gulls.push({ g, a, b, cx: rand(-50, 50), cz: rand(-150, -50), cy: rand(13, 30), r: rand(10, 26), sp: rand(0.25, 0.5) * (i % 2 ? 1 : -1), ph: rand(0, 6) });
+  }
+  // sailboats far out
+  const boats = [];
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(5, 1, 1.6), new THREE.MeshLambertMaterial({ color: 0xffffff })); g.add(hull);
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(3.2, 0); sh.lineTo(0, 7); sh.closePath();
+    const sail = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshLambertMaterial({ color: [0xff4f8b, 0xffd23f, 0xffffff, 0x39c6f0][i], side: THREE.DoubleSide })); sail.position.set(-0.4, 0.8, 0); g.add(sail);
+    const sh2 = new THREE.Shape(); sh2.moveTo(0, 0); sh2.lineTo(-2.2, 0); sh2.lineTo(0, 5.2); sh2.closePath();
+    const jib = new THREE.Mesh(new THREE.ShapeGeometry(sh2), new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide })); jib.position.set(-0.7, 0.8, 0); g.add(jib);
+    g.position.set(rand(-90, 120), 0.4, rand(-200, -150) - i * 12); g.scale.setScalar(1.6); scene.add(g); boats.push(g);
+  }
+  // dolphins leaping beside you
+  const dolphins = [];
+  for (let i = 0; i < 3; i++) {
+    const g = new THREE.Group(), dm = new THREE.MeshStandardMaterial({ color: 0x5f7f99, roughness: 0.35 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), dm); body.scale.set(0.3, 0.33, 1.15); g.add(body);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.5, 10), dm); nose.rotation.x = -Math.PI / 2; nose.position.z = -1.25; g.add(nose);
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.42, 4), dm); fin.scale.x = 0.3; fin.position.set(0, 0.42, 0.1); fin.rotation.x = 0.5; g.add(fin);
+    const tailM = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.35, 4), dm); tailM.scale.z = 0.25; tailM.rotation.x = Math.PI / 2; tailM.position.z = 1.3; g.add(tailM);
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), new THREE.MeshStandardMaterial({ color: 0xdfe8ee })); belly.scale.set(0.25, 0.22, 1.0); belly.position.y = -0.12; g.add(belly);
+    scene.add(g); dolphins.push({ g, x: 10.5 + i * 2.2, z: -22 - i * 9, ph: i * 2.1, wasUp: false });
+  }
+  // rainbow that shows while the big swell is around
+  const rainbow = new THREE.Group();
+  [0xff5a5a, 0xffa23a, 0xffe14d, 0x5fd97a, 0x4db8ff, 0x8a6bff].forEach((c, i) => {
+    const m = new THREE.Mesh(new THREE.TorusGeometry(150 - i * 3.2, 1.7, 4, 64, Math.PI), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    rainbow.add(m);
+  });
+  rainbow.position.set(-70, -12, -330); scene.add(rainbow);
+  // white wake that stays on the water behind the board
+  const WN = 150, wGeo = new THREE.BufferGeometry(), wPos = new Float32Array(WN * 3);
+  wGeo.setAttribute('position', new THREE.BufferAttribute(wPos, 3));
+  const wParts = Array.from({ length: WN }, () => ({ life: 0, x: 0, z: 0, vx: 0 }));
+  scene.add(new THREE.Points(wGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, map: softTex, transparent: true, opacity: 0.42, depthWrite: false })));
+  let wIdx = 0;
+  function updateScenery(dt, speed, px, onWater) {
+    for (const u of gulls) {
+      const t = T * u.sp + u.ph; u.g.position.set(u.cx + Math.cos(t) * u.r, u.cy + Math.sin(t * 2.3) * 1.5, u.cz + Math.sin(t) * u.r);
+      u.g.rotation.y = -t + (u.sp > 0 ? Math.PI : 0); const f = Math.sin(T * 7 + u.ph) * 0.55; u.a.rotation.z = f; u.b.rotation.z = -f;
+    }
+    boats.forEach((b, i) => { b.position.x += (0.5 + i * 0.2) * dt; if (b.position.x > 160) b.position.x = -160; b.rotation.z = Math.sin(T * 0.8 + i) * 0.05; });
+    for (const d of dolphins) {
+      const t = (T * 0.9 + d.ph) % 5.2, up = t < 1.25;
+      if (up) { const k = t / 1.25; d.g.position.set(d.x, waveH(d.x, d.z) - 0.5 + Math.sin(k * Math.PI) * 2.6, d.z - k * 5); d.g.rotation.x = Math.cos(k * Math.PI) * 0.9; d.g.visible = true; }
+      else d.g.visible = false;
+      if (up !== d.wasUp) { for (let i = 0; i < 14; i++) emit(d.x + rand(-0.4, 0.4), waveH(d.x, d.z) + 0.2, d.z - (up ? 0 : 5), rand(-2, 2), rand(2, 5), rand(-1, 1)); d.wasUp = up; }
+    }
+    rainbow.children.forEach(m => { m.material.opacity += (bigAmt * 0.42 - m.material.opacity) * Math.min(1, dt * 2); });
+    if (onWater) for (let k = 0; k < 2; k++) { const w = wParts[wIdx]; wIdx = (wIdx + 1) % WN; w.life = 1.5; w.x = px + rand(-0.35, 0.35); w.z = 1.5; w.vx = rand(-0.9, 0.9); }
+    for (let i = 0; i < WN; i++) {
+      const w = wParts[i];
+      if (w.life > 0) { w.life -= dt; w.z += speed * dt; w.x += w.vx * dt; wPos[i * 3] = w.x; wPos[i * 3 + 1] = waveH(w.x, w.z) + 0.08; wPos[i * 3 + 2] = w.z; }
+      else wPos[i * 3 + 1] = -99;
+    }
+    wGeo.attributes.position.needsUpdate = true;
+    // spray blowing off the top of the wave on the left
+    for (let k = 0; k < 2; k++) { const z = rand(-80, 6), x = -20.3 + rand(-0.6, 0.6); emit(x, waveH(x, z) + 0.2, z, rand(0.5, 3), rand(1.5, 5), rand(-1, 1), rand(0.5, 1.1)); }
   }
 
   // soft shadow under the board
@@ -742,6 +822,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       const nori = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.11, 0.085), mat(0x16241a, { roughness: 0.8 })); nori.position.set(0.15, 0.04, -0.06); nori.rotation.set(0, 0.5, -0.45); soup.add(nori);
       [0, 1].forEach(i => { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.003, 0.42, 8), mat(0x6b3f22)); st.rotation.set(Math.PI / 2, 0, 0.0); st.rotation.y = 0.5; st.position.set(-0.13 + i * 0.016, 0.178, 0.02); st.rotation.set(Math.PI / 2 - 0.02, 0, 0.6); g.add(st); });
       g.userData.level = soup;
+      const ch = soup.children.filter(c => c !== surf);
+      g.userData.tops = [[0.85, [nori]], [0.7, [ch[0]]], [0.55, [naruto]], [0.4, [egg, yolk]], [0.25, [ch[1]]]];
     } else if (id === 'sushi') {
       const wood = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.7 });
       const geta = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.022, 0.26), wood); geta.position.y = 0.045; g.add(geta);
@@ -772,14 +854,33 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     }
     return g;
   }
-  // food-coloured droplets / crumbs for spills
-  const FN = 140, fGeo = new THREE.BufferGeometry(), fPos = new Float32Array(FN * 3);
+  // coloured droplets: soup, crumbs, confetti
+  const FN = 420, fGeo = new THREE.BufferGeometry(), fPos = new Float32Array(FN * 3), fCol = new Float32Array(FN * 3);
   fGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
-  const fParts = Array.from({ length: FN }, () => ({ life: 0, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0 }));
-  const fMat = new THREE.PointsMaterial({ color: 0xd99a4e, size: 0.07, map: softTex, transparent: true, depthWrite: false });
+  fGeo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
+  const fParts = Array.from({ length: FN }, () => ({ life: 0, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0, g: 6 }));
+  const fMat = new THREE.PointsMaterial({ vertexColors: true, size: 0.11, map: softTex, transparent: true, depthWrite: false, alphaTest: 0.25 });
   scene.add(new THREE.Points(fGeo, fMat));
-  let fIdx = 0;
-  function emitFood(x, y, z, vx, vy, vz) { const p = fParts[fIdx]; fIdx = (fIdx + 1) % FN; Object.assign(p, { life: rand(0.5, 0.9), x, y, z, vx, vy, vz }); }
+  let fIdx = 0; const _fc = new THREE.Color();
+  function emitFood(x, y, z, vx, vy, vz, color, life, grav) {
+    const p = fParts[fIdx]; _fc.set(color === undefined ? FOOD_COL[food.id] : color);
+    fCol[fIdx * 3] = _fc.r; fCol[fIdx * 3 + 1] = _fc.g; fCol[fIdx * 3 + 2] = _fc.b;
+    fIdx = (fIdx + 1) % FN;
+    Object.assign(p, { life: life || rand(0.5, 0.9), x, y, z, vx, vy, vz, g: grav === undefined ? 6 : grav });
+  }
+  // pieces of food that really fall off the tray and splash into the sea
+  let debris = [];
+  const _dp = new THREE.Vector3(), _dq = new THREE.Quaternion(), _ds = new THREE.Vector3();
+  function dropPiece(src) {
+    if (!src.visible) return;
+    src.updateWorldMatrix(true, false); src.matrixWorld.decompose(_dp, _dq, _ds);
+    const m = src.clone(true); m.position.copy(_dp); m.quaternion.copy(_dq); m.scale.copy(_ds); m.visible = true; scene.add(m);
+    const side = rel > 0 ? -1 : 1;
+    debris.push({ m, vx: side * rand(0.7, 1.7) + vx * 0.3, vy: rand(1.2, 2.4), vz: rand(-0.2, 0.5), rx: rand(-7, 7), rz: rand(-7, 7) });
+  }
+  // a stream of soup pouring over the rim
+  const stream = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.012, 0.7, 10).translate(0, -0.35, 0), new THREE.MeshStandardMaterial({ color: 0xd99a4e, roughness: 0.1, transparent: true, opacity: 0.88 }));
+  stream.visible = false; scene.add(stream);
   const FOOD_COL = { ramen: 0xd99a4e, sushi: 0xfbf9f2, pizza: 0xf6c453 };
   const _tw = new THREE.Vector3();
   const closeCam = new THREE.PerspectiveCamera(40, 208 / 150, 0.05, 400);
@@ -790,6 +891,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     if (!id) return;
     const m = foodMeshes[id];
     if (m.userData.level) { m.userData.level.position.y = 0.075 + 0.075 * left; m.userData.level.scale.setScalar(0.72 + 0.28 * left); m.userData.level.visible = left > 0.02; }
+    if (m.userData.tops) m.userData.tops.forEach(([th, objs]) => objs.forEach(o => { o.visible = left > th; }));
     if (m.userData.pieces) m.userData.pieces.forEach((p, i) => { p.visible = left > i * 0.33; });
     if (m.userData.slices) m.userData.slices.forEach((p, i) => { p.visible = left > i / 6; });
   }
@@ -875,7 +977,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   let camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
   let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
   let slosh = 0, sloshV = 0, trayIn = 0, trayA = 0, trayAng = 0, rel = 0; // balance: food angle vs tray angle
-  let nextBig = 20, bigLeft = 0;
+  let nextBig = 20, bigLeft = 0, ridgeOn = false, ridgeDone = false, ridgeJust = false, prevSurf = 0, surfVel = 0;
   const keys = { left: false, right: false };
   const stick = { id: null, x: 0, jumped: false };
 
@@ -889,7 +991,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; delivered = 0; clean = 0;
     obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; slosh = 0; sloshV = 0; trayA = 0;
-    nextBig = rand(22, 28); bigLeft = 0; bigAmt = 0; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
+    nextBig = rand(14, 18); bigLeft = 0; bigAmt = 0; ridgeOn = false; ridgeZ = -999; ridgeH = 0; debris.forEach(d => scene.remove(d.m)); debris = []; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
     popQ.length = 0;
     newLeg('pickup');
   }
@@ -945,7 +1047,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   // ---------- gameplay ----------
   function jump() {
     if (state !== 'play' || jumpY > 0.01) return;
-    vy = 8.2; sfx.jump(); airMax = 0;
+    vy = 8.2 + clamp(surfVel, 0, 6); sfx.jump(); airMax = 0;   // a rising wave face throws you higher, like a ramp
+    if (ridgeOn && !ridgeDone && ridgeZ > -12 && ridgeZ < 1) { ridgeJust = true; vy = 11.5; beep(660, 0.3, 'triangle', 0.08, 2); }   // timed with the crest
     for (let i = 0; i < 14; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(2, 5), rand(0, 4));
   }
   // anything that jolts the tray spills some of the food
@@ -953,15 +1056,22 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     if (phase !== 'deliver' || amount <= 0) return;
     const before = foodLeft;
     foodLeft = Math.max(0, foodLeft - amount * food.fragile);
+    const ud = foodMeshes[food.id].userData, crossed = th => before > th && foodLeft <= th;
+    if (ud.tops) ud.tops.forEach(([th, objs]) => { if (crossed(th)) objs.forEach(dropPiece); });
+    if (ud.pieces) ud.pieces.forEach((pc, i) => { if (crossed(i * 0.33)) dropPiece(pc); });
+    if (ud.slices) ud.slices.forEach((sl, i) => { if (crossed(i / 6)) dropPiece(sl); });
     showFood(food.id, foodLeft);
     const lost = before - foodLeft;
+    spillAcc += lost;
+    if (spillAcc > 0.05) { splat(Math.min(4, 1 + Math.round(spillAcc * 12))); spillAcc = 0; beep(140, 0.18, 'sawtooth', 0.07, 0.5); beep(900, 0.08, 'square', 0.03, 0.3, 0.03); }
     if (lost > 0.04 && spillCool <= 0) {
       spillCool = 0.6;
       hint(`${why}で こぼれた！ -${Math.round(lost * 100)}%`);
       const b = $('foodBar'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
       sfx.bad();
       const wp = new THREE.Vector3(); tray.getWorldPosition(wp);
-      for (let i = 0; i < 24; i++) emitFood(wp.x + rand(-0.15, 0.15), wp.y + 0.15, wp.z + rand(-0.15, 0.15), rand(-1.5, 1.5), rand(0.8, 2.2), rand(-1, 1));
+      for (let i = 0; i < 46; i++) emitFood(wp.x + rand(-0.18, 0.18), wp.y + 0.15, wp.z + rand(-0.18, 0.18), rand(-2, 2), rand(0.8, 3), rand(-1.2, 1.2));
+      if (food.id === 'ramen') for (let i = 0; i < 12; i++) emitFood(wp.x + rand(-0.15, 0.15), wp.y + 0.2, wp.z, rand(-1.5, 1.5), rand(1.5, 3.2), rand(-1, 1), 0xf3dc9a, 0.9);   // noodles
     }
     if (foodLeft <= 0) {
       pop(`${food.name}が ぜんぶこぼれた…`, '#ffd0dc'); combo = 0;
@@ -969,9 +1079,27 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       newLeg('pickup');
     }
   }
+  const SPLAT_COL = { ramen: ['#d99a4e', '#c98436', '#f3dc9a'], sushi: ['#fbf9f2', '#ff8552', '#c9283a'], pizza: ['#f6c453', '#c0392b', '#e8a23a'] };
+  let spillAcc = 0;
+  function splat(count) {
+    const box = $('splats'), cols = SPLAT_COL[food.id];
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div'); d.className = 'splat';
+      const size = rand(30, 78), edge = Math.random();
+      d.style.width = size + 'px'; d.style.height = size * rand(0.8, 1.1) + 'px';
+      d.style.left = (edge < 0.45 ? rand(-2, 20) : edge < 0.9 ? rand(74, 96) : rand(25, 70)) + '%';
+      d.style.top = (edge < 0.9 ? rand(22, 78) : rand(72, 86)) + '%';
+      d.style.background = cols[Math.floor(Math.random() * cols.length)];
+      box.appendChild(d); setTimeout(() => d.remove(), 1600);
+    }
+  }
+  function confetti() {
+    const cols = [0xff4f8b, 0xffd23f, 0x3fe0a8, 0x39c6f0, 0xffffff, 0xff9d00];
+    for (let i = 0; i < 90; i++) emitFood(px + rand(-1.2, 1.2), surfer.position.y + rand(1.5, 3), rand(-1, 1), rand(-4, 4), rand(2, 7), rand(-3, 1), cols[i % cols.length], rand(0.9, 1.6), 5);
+  }
   const limitNow = () => food.limit * (1 + (1 - foodLeft) * 0.8);   // less left in the bowl = harder to spill
   function pickup() {
-    newLeg('deliver'); showFood(food.id, 1); fMat.color.set(FOOD_COL[food.id]);
+    newLeg('deliver'); showFood(food.id, 1);
     sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
     hint('曲がる方向にトレーを傾けよう！');
   }
@@ -984,7 +1112,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     score += pts; delivered++; timeLeft += 6;
     pop(isClean ? `きれいに お届け！ +${pts}` : `お届け！ +${pts}`, isClean ? '#ffd23f' : '#fff');
     pop(`チップ ${tip}  +6秒`, '#9ff3d0');
-    sfx.order();
+    sfx.order(); confetti();
     newLeg('pickup');
   }
   function onHit() {
@@ -999,7 +1127,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     state = 'over';
     let best = 0;
     try { best = +localStorage.getItem('surfdemae-best') || 0; if (score > best) { best = score; localStorage.setItem('surfdemae-best', String(score)); } } catch (e) { best = Math.max(best, score); }
-    $('rank').textContent = score >= 6000 ? 'S' : score >= 4000 ? 'A' : score >= 2000 ? 'B' : 'C';
+    $('rank').textContent = score >= 8000 ? 'S' : score >= 5500 ? 'A' : score >= 3000 ? 'B' : 'C';
     $('rScore').textContent = score.toLocaleString();
     $('rDone').textContent = delivered + ' 回';
     $('rClean').textContent = clean + ' 回';
@@ -1036,18 +1164,21 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), waveH(px, 0) + 0.3, rand(-1, 1), rand(-2, 4), rand(3, 9), rand(-2, 2));
     }
     if (jumpY > 0 || vy > 0) {
-      vy -= 22 * dt; jumpY += vy * dt; airMax = Math.max(airMax, jumpY);
+      const surfNow = waveH(px, 0);
+      const dS = surfNow - prevSurf;
+      vy -= 22 * dt; jumpY += vy * dt - (ridgeJust && !ridgeDone ? Math.min(dS, 0) : dS); airMax = Math.max(airMax, jumpY);   // the water can drop away under you
       if (aerialT > 0) aerialT += dt;
       if (jumpY <= 0) {
         if (aerialT > 0) {
           const pts = Math.round(400 * (bigAmt > 0.5 ? 2 : 1));
           score += pts; pop(`エアリアル成功！ +${pts}`, '#ffd23f'); sfx.order(); aerialT = 0;
           sloshV += (Math.random() < 0.5 ? -1 : 1) * 2.6;   // a big slosh you can still catch
-        } else sloshV += (Math.random() < 0.5 ? -1 : 1) * (0.7 + airMax * 0.7);
+        } else sloshV += (Math.random() < 0.5 ? -1 : 1) * (0.7 + Math.min(airMax, 3) * 0.7);
         jumpY = 0; vy = 0; landJolt = 0.5;
         for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3));
       }
     }
+    surfVel = (waveH(px, 0) - prevSurf) / Math.max(dt, 1e-3); prevSurf = waveH(px, 0);
     landJolt = Math.max(0, landJolt - dt * 1.5);
     spillCool = Math.max(0, spillCool - dt);
 
@@ -1055,8 +1186,23 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       elapsed += dt; timeLeft -= dt; legTime += dt;
       const target = lerp(18, 28, clamp(elapsed / 100, 0, 1));
       speed += (target - speed) * Math.min(1, dt * 0.8);
-      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft < 4) $('big').hidden = true; if (bigLeft <= 0) nextBig = elapsed + rand(20, 26); }
-      else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 9; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
+      if (ridgeOn) {
+        ridgeZ += speed * dt; ridgeH += (4.8 - ridgeH) * Math.min(1, dt * 1.5);
+        bigLeft = ridgeZ < 6 ? 1 : 0;
+        if (ridgeZ > -70) $('big').hidden = true;
+        if (ridgeZ > -40 && !ridgeDone) hint('てっぺんでジャンプ！');
+        if (!ridgeDone && ridgeZ >= -0.6) {            // the crest is under the board right now
+          ridgeDone = true;
+          if (jumpY > 0.2 && ridgeJust) { score += 600; pop('ジャスト！ 大ジャンプ +600', '#ffd23f'); aerialT = 0.001; sfx.perfect(); }
+          else if (jumpY <= 0.2) { vy = 7.5; jumpY = 0.02; airMax = 0; score += 400; pop('大波を乗り越えた！ +400', '#9ff3d0'); sfx.good(); }
+          else { score += 200; pop('大波をとびこえた +200', '#fff'); }
+          for (let i = 0; i < 50; i++) emit(px + rand(-2, 2), waveH(px, 0) + 0.2, rand(-1, 1), rand(-4, 4), rand(3, 9), rand(-2, 3));
+        }
+        if (ridgeZ > 40) { ridgeOn = false; ridgeH = 0; ridgeZ = -999; nextBig = elapsed + rand(16, 22); }
+      } else if (elapsed >= nextBig && timeLeft > 10) {
+        ridgeOn = true; ridgeDone = false; ridgeJust = false; ridgeZ = -185; ridgeH = 0.01;
+        $('big').hidden = false; beep(110, 0.9, 'sawtooth', 0.08, 2.2);
+      }
       if (px < WALL_X && jumpY === 0) {
         rideAcc += dt * 40 * (bigAmt > 0.5 ? 2 : 1);
         if (rideAcc >= 1) { score += Math.floor(rideAcc); rideAcc -= Math.floor(rideAcc); }
@@ -1117,9 +1263,13 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       const hot = clamp((Math.abs(n) - 0.55) / 0.45, 0, 1) * (0.6 + 0.4 * Math.sin(T * 14));
       trayRim.material.emissive.setRGB(hot, 0, 0); trayRim.scale.setScalar(1 + hot * 0.03);
       // spilling: bits of food fly off the low side
-      if (playing && phase === 'deliver' && Math.abs(n) > 1 && jumpY < 3) {
+      const pouring = playing && phase === 'deliver' && Math.abs(n) > 1;
+      stream.visible = pouring && food.id === 'ramen';
+      if (pouring) {
         tray.getWorldPosition(_tw);
-        for (let i = 0; i < 2; i++) emitFood(_tw.x - Math.sign(n) * 0.22, _tw.y + 0.16, _tw.z + rand(-0.1, 0.1), -Math.sign(n) * rand(0.6, 1.6), rand(0.4, 1.4), rand(-0.4, 0.4));
+        const sd = -Math.sign(n);
+        stream.position.set(_tw.x + sd * 0.2, _tw.y + 0.17, _tw.z); stream.rotation.z = sd * 0.35 + Math.sin(T * 30) * 0.05; stream.scale.set(1 + Math.sin(T * 23) * 0.25, 0.7 + (Math.abs(n) - 1) * 1.2, 1);
+        for (let i = 0; i < 5; i++) emitFood(_tw.x - Math.sign(n) * 0.22, _tw.y + 0.16, _tw.z + rand(-0.1, 0.1), -Math.sign(n) * rand(0.6, 1.6), rand(0.4, 1.4), rand(-0.4, 0.4));
       }
     }
     // close-up camera sits just behind the tray and stays level, so the tilt is easy to read
@@ -1181,11 +1331,19 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     pGeo.attributes.position.needsUpdate = true;
     for (let i = 0; i < FN; i++) {
       const p = fParts[i];
-      if (p.life > 0) { p.life -= dt; p.vy -= 6 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.life <= 0) p.y = -99; }
+      if (p.life > 0) { p.life -= dt; p.vy -= p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.life <= 0) p.y = -99; }
       fPos[i * 3] = p.x; fPos[i * 3 + 1] = p.y; fPos[i * 3 + 2] = p.z;
     }
-    fGeo.attributes.position.needsUpdate = true;
+    fGeo.attributes.position.needsUpdate = true; fGeo.attributes.color.needsUpdate = true;
+    debris = debris.filter(d => {
+      d.vy -= 9 * dt; d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt; d.m.position.z += (d.vz + speed * 0.45) * dt;
+      d.m.rotation.x += d.rx * dt; d.m.rotation.z += d.rz * dt;
+      if (d.m.position.y > waveH(d.m.position.x, d.m.position.z)) return true;
+      for (let i = 0; i < 10; i++) emit(d.m.position.x, d.m.position.y + 0.1, d.m.position.z, rand(-1.5, 1.5), rand(1.5, 4), rand(-1, 1));
+      scene.remove(d.m); return false;
+    });
     updateOcean();
+    updateScenery(dt, speed, px, jumpY === 0);
 
     // camera behind and above, following the surfer
     shake = Math.max(0, shake - dt);
