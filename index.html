@@ -254,9 +254,9 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.3, tip: 4.6, base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, tip: 3.6, base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, tip: 2.2, base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.2, tip: 3.0, base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.95, tip: 2.3, base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.65, tip: 1.5, base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -776,12 +776,12 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   // obstacle patterns always leave a way through
   function spawnObstacles(diff) {
     const r = Math.random();
-    if (r < 0.35 || diff < 0.1) {
+    if (r < 0.6 || diff < 0.45) {
       (Math.random() < 0.6 ? rock : buoy)(rand(-LANE, LANE), SPAWN_Z, rand(0.8, 1.2));
-    } else if (r < 0.6) {
+    } else if (r < 0.78) {
       const g = rand(-4.5, 4.5);
       [g - 3.6, g + 3.6].forEach(x => { if (Math.abs(x) <= LANE + 0.5) buoy(x, SPAWN_Z); });
-    } else if (r < 0.78 && diff > 0.3) {
+    } else if (r < 0.88 && diff > 0.7) {
       // a low reef across the wave: jump it or thread the gap
       const gap = rand(-5, 5);
       for (let x = -LANE; x <= LANE; x += 2.1) if (Math.abs(x - gap) > 1.9) rock(x, SPAWN_Z, 0.65);
@@ -1229,7 +1229,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
   let sloshV = 0, trayIn = 0, trayA = 0, rel = 0;
   let lean = 0, leanV = 0, graceT = 0, gustT = 3;      // balance: how far the stack is leaning, and how fast
-  const LEAN_MAX = 0.5;
+  const LEAN_MAX = 0.6;
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
   let carveCool = 0, squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
@@ -1240,7 +1240,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   function nextFood() {
     const base = orderIdx < 3 ? FOODS[2 - orderIdx] : FOODS[Math.floor(Math.random() * FOODS.length)];
     const f = Object.assign({}, base);
-    f.n = clamp(2 + Math.floor(orderIdx / 2), 2, 6);            // orders grow: 2 portions at first, up to a tower of 6
+    f.n = clamp(2 + Math.floor(orderIdx / 3), 2, 6);            // orders grow: 2 portions at first, up to a tower of 6
     f.name = `${base.name}${f.n}人前`;
     orderIdx++; return f;
   }
@@ -1263,7 +1263,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; delivered = 0; clean = 0;
     mult = 1; maxMult = 1; chainT = 0; starsTotal = 0; orderIdx = 0; boost = 0; balT = 0;
-    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; sloshV = 0; trayA = 0; lean = 0; leanV = 0;
+    obsTimer = 6; coinTimer = 1.2; invuln = 0; shake = 0; sloshV = 0; trayA = 0; lean = 0; leanV = 0;
     nextBig = rand(9, 11); bigLeft = 0; bigAmt = 0; ridges.forEach(g => { g.on = false; g.z = -999; g.h = 0; }); setNo = 0; debris.forEach(d => scene.remove(d.m)); debris = []; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
     popQ.length = 0;
     newLeg('pickup');
@@ -1367,7 +1367,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   }
   const limitNow = () => LEAN_MAX;
   function pickup() {
-    newLeg('deliver'); buildStack(food.id, food.n); lean = 0; leanV = 0; graceT = 1.5;
+    newLeg('deliver'); buildStack(food.id, food.n); lean = 0; leanV = 0; graceT = 3;
     sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
     hint('倒れそうな方へ 手を動かして支えよう！');
   }
@@ -1390,7 +1390,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     invuln = 1.6; shake = 0.6; speed *= 0.6;
     timeLeft -= 3; sfx.hit(); flash();
     pop('ドボン！ -3秒', '#ffd0dc'); breakChain(9, true); boost = 0;
-    sloshV += (Math.random() < 0.5 ? -1 : 1) * rand(2.4, 3.0);   // a crash rocks the pile hard, but a quick hand can still save it
+    sloshV += (Math.random() < 0.5 ? -1 : 1) * rand(1.6, 2.1);   // a crash rocks the pile hard, but a quick hand can still save it
     if (phase === 'deliver') hint('ぶつかって 大きくぐらついた！ 立て直して！');
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
@@ -1545,21 +1545,22 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     trayA += (trayIn - trayA) * Math.min(1, dt * 12);
     if (playing && phase === 'deliver' && stackNodes.length) {
       const n = stackNodes.length, steady = crouch ? 0.6 : 1;
-      const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady;
-      const A = food.tip * (1 + 0.12 * (n - 2)) * steady;
+      const ease = orderIdx <= 3 ? 0.7 : 1;                                          // the first few orders are a warm-up
+      const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady * ease;
+      const A = food.tip * (1 + 0.12 * (n - 2)) * steady * ease;
       const roll = -Math.atan(waveH(px + 0.5, 0) - waveH(px - 0.5, 0)) * 0.5;       // the board's own lean (big on the wave face)
-      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.22 + bigAmt * 0.35 + Math.abs(vx) * 0.02 + (px < WALL_X ? 0.2 : 0));
+      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.12 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0));
       leanV += sloshV * 0.42; sloshV = 0;                                            // jolts from tricks, landings and near misses
-      leanV += (A * (lean + roll * 0.6 - trayA * 0.62) - clamp(ax, -90, 90) * 0.022 * sens + chop * sens - leanV * 1.1) * dt;
+      leanV += (A * (lean + roll * 0.6 - trayA * 0.8) - clamp(ax, -90, 90) * 0.013 * sens + chop * sens - leanV * 1.1) * dt;
       // every few seconds the sea gives the pile an unannounced shove
-      gustT -= dt; if (gustT <= 0) { gustT = rand(2.2, 4.2); leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.25, 0.5) * sens; }
+      gustT -= dt; if (gustT <= 0) { gustT = rand(4, 7); leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.18, 0.36) * sens; }
       lean += leanV * dt; graceT -= dt;
       if (Math.abs(lean) > LEAN_MAX && graceT <= 0) {
         const sg = Math.sign(lean);
         dropTop('バランスをくずして');
-        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 0.8;                // the rest of the pile rocks back: a moment to recover
+        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 1.6;                // the rest of the pile rocks back: a moment to recover
       }
-      lean = clamp(lean, -0.7, 0.7);
+      lean = clamp(lean, -0.8, 0.8);
     } else { lean *= Math.pow(0.02, dt); leanV = 0; sloshV = 0; }
     rel = lean;
 
@@ -1570,7 +1571,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       obsTimer -= dt; coinTimer -= dt;
       const t = targetEnt();
       const nearTarget = t && t.z < SPAWN_Z + 16;
-      if (obsTimer <= 0) { if (!nearTarget) spawnObstacles(diff); obsTimer = lerp(1.5, 0.8, diff) * rand(0.75, 1.25); }
+      if (obsTimer <= 0) { if (!nearTarget) spawnObstacles(diff); obsTimer = lerp(4.2, 2.4, diff) * rand(0.8, 1.25); }
       if (coinTimer <= 0) { if (!nearTarget) spawnCoins(); coinTimer = rand(2.5, 4); }
       if (invuln > 0) invuln -= dt;
       if (timeLeft <= 0) { timeLeft = 0; endGame(); }
