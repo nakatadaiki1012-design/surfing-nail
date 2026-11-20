@@ -340,7 +340,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   });
 
   // ocean: waves are computed on the GPU with the same formula as waveH() below
-  const OW = 90, OL = 210, SX = 110, SZ = 240;
+  const OW = 360, OL = 210, SX = 300, SZ = 220;   // wide enough that you never see where the water ends
   const oceanGeo = new THREE.PlaneGeometry(OW, OL, SX, SZ);
   oceanGeo.rotateX(-Math.PI / 2);
   oceanGeo.translate(0, 0, -OL / 2 + 25);
@@ -561,13 +561,14 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       if ((F[id(i, j, k)] < 0) !== (F[id(i, j, k + 1)] < 0)) quad(cellV[cid(i - 1, j - 1, k)], cellV[cid(i, j - 1, k)], cellV[cid(i, j, k)], cellV[cid(i - 1, j, k)]);
     const e = h * 0.2, n = new THREE.Vector3();
     const grad = (x, y, z) => n.set(sdf(x + e, y, z) - sdf(x - e, y, z), sdf(x, y + e, z) - sdf(x, y - e, z), sdf(x, y, z + e) - sdf(x, y, z - e)).normalize();
-    const nrm = new Float32Array(pos.length), col = new Float32Array(pos.length);
+    const nrm = new Float32Array(pos.length), col = new Float32Array(pos.length), aoA = new Float32Array(pos.length / 3);
     for (let v = 0; v < pos.length; v += 3) {
       let x = pos[v], y = pos[v + 1], z = pos[v + 2];
       for (let it = 0; it < 2; it++) { const d = sdf(x, y, z); grad(x, y, z); x -= n.x * d; y -= n.y * d; z -= n.z * d; }
       pos[v] = x; pos[v + 1] = y; pos[v + 2] = z;
       grad(x, y, z); nrm[v] = n.x; nrm[v + 1] = n.y; nrm[v + 2] = n.z;
       const ao = clamp(sdf(x + n.x * h * 3, y + n.y * h * 3, z + n.z * h * 3) / (h * 3), 0, 1);
+      aoA[v / 3] = ao;
       const c = colorFn(x, y, z, n), sh = 0.6 + 0.4 * ao;
       col[v] = c[0] * sh; col[v + 1] = c[1] * sh; col[v + 2] = c[2] * sh;
     }
@@ -581,6 +582,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setAttribute('ao', new THREE.Float32BufferAttribute(aoA, 1));
     geo.setIndex(idx);
     return geo;
   }
@@ -955,37 +957,197 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     const arrow = new THREE.Mesh(G.arrow, MT.arrow); arrow.rotation.x = Math.PI; arrow.scale.setScalar(1.6); arrow.position.y = 4.2; m.add(arrow);
     return { ring, pillar, arrow };
   }
+  // ---------- people: one smooth standing body, re-dressed for each customer and for the shopkeeper ----------
+  const PERSON = (() => {
+    const P = { legs: [], arms: [] };
+    [-1, 1].forEach(s => {
+      P.legs.push([V3(s * 0.09, 0.86, 0), V3(s * 0.1, 0.47, 0.02), 0.085, 0.058], [V3(s * 0.1, 0.47, 0.02), V3(s * 0.1, 0.09, 0), 0.057, 0.038], [V3(s * 0.1, 0.045, -0.03), V3(s * 0.1, 0.04, 0.15), 0.042, 0.034]);
+    });
+    // left arm rests at the side; right arm is up, waving
+    P.arms.push([V3(-0.19, 1.36, 0), V3(-0.25, 1.1, 0.03), 0.046, 0.036], [V3(-0.25, 1.1, 0.03), V3(-0.24, 0.87, 0.1), 0.036, 0.028], [V3(-0.24, 0.87, 0.1), V3(-0.24, 0.8, 0.12), 0.03, 0.034]);
+    P.arms.push([V3(0.19, 1.36, 0), V3(0.36, 1.5, 0.03), 0.046, 0.036], [V3(0.36, 1.5, 0.03), V3(0.42, 1.76, 0.05), 0.036, 0.028], [V3(0.42, 1.76, 0.05), V3(0.43, 1.84, 0.06), 0.03, 0.036]);
+    P.pelvis = [V3(0, 0.9, 0), V3(0, 1.06, 0), 0.118, 0.1]; P.chest = [V3(0, 1.06, 0), V3(0, 1.3, 0.01), 0.1, 0.118];
+    P.sh = [V3(-0.19, 1.36, 0), V3(0.19, 1.36, 0)]; P.neck = [V3(0, 1.4, 0), V3(0, 1.5, 0.01), 0.047, 0.042];
+    P.head = V3(0, 1.6, 0.015);
+    return P;
+  })();
+  function personTorso(x, y, z) {
+    const xx = x / 1.28;
+    let d = smin(sdRoundCone(xx, y, z, ...PERSON.pelvis), sdRoundCone(xx, y, z, ...PERSON.chest), 0.03);
+    for (const s of PERSON.sh) d = smin(d, sdSphere(x, y, z, s, 0.05), 0.05);
+    return d;
+  }
+  function personSDF(x, y, z) {
+    let d = personTorso(x, y, z);
+    d = smin(d, limbsD(PERSON.legs, x, y, z), 0.04);
+    d = smin(d, limbsD(PERSON.arms, x, y, z), 0.03);
+    let h = sdSphere(x, PERSON.head.y + (y - PERSON.head.y) / 1.13, z, PERSON.head, 0.102);
+    h = smin(h, sdSphere(x, y, z, V3(0, 1.54, 0.045), 0.066), 0.04);
+    h = smin(h, sdSphere(x, y, z, V3(0, 1.585, 0.118), 0.016), 0.02);
+    h = smin(h, sdRoundCone(x, y, z, ...PERSON.neck), 0.02);
+    return smin(d, h, 0.02);
+  }
+  const personGeo = buildSDFMesh(personSDF, V3(-0.42, 0.0, -0.22), V3(0.58, 1.96, 0.3), 0.018, () => [1, 1, 1]);
+  // outfit: { skin, top, bottom, sleeve (how far down the arm the top goes), hem (where the legs become bare), stripe, apron }
+  function dressed(o) {
+    const g = personGeo.clone(), pos = g.attributes.position, ao = g.attributes.ao, col = new Float32Array(pos.count * 3);
+    const c3 = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
+    const skin = c3(o.skin || 0xdd9f7c), top = c3(o.top), bottom = c3(o.bottom), stripe = o.stripe != null ? c3(o.stripe) : null, apron = o.apron != null ? c3(o.apron) : null;
+    const p = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      p.fromBufferAttribute(pos, i);
+      let c = skin;
+      const nearSh = Math.min(p.distanceTo(PERSON.sh[0]), p.distanceTo(PERSON.sh[1]));
+      const onTorso = personTorso(p.x, p.y, p.z) < 0.022;
+      if (p.y > 0.98 && p.y < 1.445 && (onTorso || nearSh < o.sleeve) || (p.y >= 1.445 && nearSh < o.sleeve && p.distanceTo(PERSON.head) > 0.19)) {
+        c = stripe && Math.sin(p.y * 70) > 0.2 ? stripe : top;
+        if (apron && p.z > 0.02 && Math.abs(p.x) < 0.13 && onTorso) c = apron;
+      } else if (p.y <= 0.98 && p.y > o.hem && Math.abs(p.x) < 0.22 && p.z < 0.12 + (p.y > 0.6 ? 1 : 0)) {
+        c = apron && p.z > 0.03 && p.y > 0.55 && Math.abs(p.x) < 0.16 ? apron : bottom;
+      } else if (p.y < 0.075 && o.shoes != null) c = c3(o.shoes);
+      const sh = 0.6 + 0.4 * ao.getX(i);
+      col[i * 3] = c[0] * sh; col[i * 3 + 1] = c[1] * sh; col[i * 3 + 2] = c[2] * sh;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return g;
+  }
+  const personMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, emissive: 0x2a0f08, emissiveIntensity: 0.15 });
+  const faceBits = (() => {   // eyes and a smile, shared by everyone
+    const g = new THREE.Group(), dark = mat(0x1d1512, { roughness: 0.3 });
+    [-1, 1].forEach(s => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.013, 10, 8), dark); e.position.set(s * 0.037, 1.612, 0.108); g.add(e); });
+    const m = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.005, 6, 12, Math.PI), mat(0xb5443f)); m.position.set(0, 1.555, 0.105); m.rotation.z = Math.PI; g.add(m);
+    return g;
+  })();
+  function hairCap(color, back) {
+    const g = new THREE.Group(), hm = mat(color, { roughness: 0.6 });
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.117, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.6), hm); cap.position.set(0, 1.615, 0.005); cap.rotation.x = -0.42; g.add(cap);
+    if (back === 'long') { const l = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), hm); l.scale.set(0.11, 0.2, 0.07); l.position.set(0, 1.47, -0.075); g.add(l); }
+    if (back === 'bun') { const b = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 10), hm); b.position.set(0, 1.71, -0.07); g.add(b); }
+    return g;
+  }
+  const OUTFITS = {
+    '釣りのおじさん': { o: { top: 0x5d7a3a, bottom: 0x8a7a5a, sleeve: 0.17, hem: 0.45, skin: 0xc98e68 }, hair: [0x3a2b22], hat: 'straw', prop: 'rod', boat: 0x2d6fb5 },
+    'ボートの家族': { o: { top: 0xffd23f, bottom: 0x2d4b8f, sleeve: 0.17, hem: 0.5 }, hair: [0x2a1a12, 'long'], kid: true, boat: 0xff7b54 },
+    'ヨットのお姉さん': { o: { top: 0xffffff, stripe: 0x2d4b8f, bottom: 0xffffff, sleeve: 0.34, hem: 0.62 }, hair: [0x8a5a2a, 'long'], hat: 'cap', prop: 'sail', boat: 0xffffff },
+    'ライフセーバー': { o: { top: 0xffd21a, bottom: 0xd92b2b, sleeve: 0.12, hem: 0.6, skin: 0xb97a52 }, hair: [0x2a1a12], prop: 'ring', boat: 0xd92b2b },
+    '島のおばあちゃん': { o: { top: 0x8a5fb0, bottom: 0x4a3d57, sleeve: 0.5, hem: 0.12, skin: 0xd9a585, shoes: 0x3a2b22 }, hair: [0xd8d8d8, 'bun'], scale: 0.88, prop: 'parasol', boat: 0x2fb57a },
+  };
+  const geoCache = {};
+  function makePerson(key, outfit, hair, hat) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(geoCache[key] || (geoCache[key] = dressed(outfit)), personMat));
+    g.add(faceBits.clone());
+    if (hair) g.add(hairCap(hair[0], hair[1]));
+    if (hat === 'straw') {
+      const hm = mat(0xe9d28a, { roughness: 0.9 });
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.25, 0.012, 28), hm); brim.position.set(0, 1.69, 0.01); g.add(brim);
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.09, 20), hm); crown.position.set(0, 1.735, 0.005); g.add(crown);
+    } else if (hat === 'cap') {
+      const hm = mat(0x2d4b8f);
+      const c = new THREE.Mesh(new THREE.SphereGeometry(0.121, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.42), hm); c.position.set(0, 1.625, 0.008); g.add(c);
+      const v = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.01, 16, 1, false, -1.1, 2.2), hm); v.position.set(0, 1.66, 0.1); g.add(v);
+    } else if (hat === 'chef') {
+      const hm = mat(0xffffff, { roughness: 0.8 });
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.108, 0.08, 20), hm); band.position.set(0, 1.71, 0.005); g.add(band);
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), hm); puff.scale.y = 0.75; puff.position.set(0, 1.81, 0.005); g.add(puff);
+    } else if (hat === 'towel') {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.108, 0.02, 8, 24), mat(0xffffff, { roughness: 0.9 })); band.rotation.x = Math.PI / 2 - 0.25; band.position.set(0, 1.67, 0.005); g.add(band);
+    }
+    return g;
+  }
+
+  // ---------- boats and the floating shop ----------
+  const plankTex = canvasTex(128, (g, S) => { g.fillStyle = '#a97848'; g.fillRect(0, 0, S, S); for (let i = 0; i < 8; i++) { g.fillStyle = `rgba(60,35,15,${0.25 + (i % 2) * 0.12})`; g.fillRect(0, i * 16, S, 2); for (let k = 0; k < 5; k++) { g.strokeStyle = 'rgba(90,55,25,.25)'; g.beginPath(); g.moveTo(0, i * 16 + 4 + k * 2.5); g.lineTo(S, i * 16 + 5 + k * 2.5 + (k % 2)); g.stroke(); } } });
+  plankTex.wrapS = plankTex.wrapT = THREE.RepeatWrapping;
+  const tileTex = canvasTex(128, (g, S) => { g.fillStyle = '#34495e'; g.fillRect(0, 0, S, S); for (let y = 0; y < 8; y++) for (let x = 0; x < 9; x++) { g.fillStyle = (x + y) % 2 ? '#3d566e' : '#2c3e50'; g.beginPath(); g.ellipse(x * 16 + (y % 2) * 8, y * 16 + 14, 8, 10, 0, Math.PI, 0); g.fill(); } });
+  tileTex.wrapS = tileTex.wrapT = THREE.RepeatWrapping; tileTex.repeat.set(2, 1);
+  function textTex(text, bg, fg, w = 256, h = 96, stripes) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    if (stripes) stripes.forEach((col, i) => { g.fillStyle = col; g.fillRect(i * w / stripes.length, 0, w / stripes.length + 1, h); }); else { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `400 ${Math.round(h * 0.6)}px "Dela Gothic One", "Hiragino Sans", sans-serif`;
+    g.lineWidth = 6; g.strokeStyle = 'rgba(0,0,0,.35)'; if (stripes) g.strokeText(text, w / 2, h / 2 + 2);
+    g.fillText(text, w / 2, h / 2 + 2);
+    return new THREE.CanvasTexture(c);
+  }
+  function hullGeo(halfW, len, depth) {   // a boat-shaped hull: pointed bow toward +z (facing you), narrower at the keel
+    const s = new THREE.Shape();
+    s.moveTo(0, len * 0.55); s.bezierCurveTo(halfW * 0.7, len * 0.4, halfW, len * 0.1, halfW, -len * 0.2);
+    s.lineTo(halfW * 0.85, -len * 0.45); s.lineTo(-halfW * 0.85, -len * 0.45); s.lineTo(-halfW, -len * 0.2);
+    s.bezierCurveTo(-halfW, len * 0.1, -halfW * 0.7, len * 0.4, 0, len * 0.55);
+    const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 16 });
+    g.rotateX(Math.PI / 2);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const t = clamp(-p.getY(i) / depth, 0, 1); p.setX(i, p.getX(i) * (1 - 0.4 * t)); p.setZ(i, p.getZ(i) * (1 - 0.14 * t)); }
+    g.computeVertexNormals(); return g;
+  }
+  function makeBoat(color, halfW = 1.0, len = 4.2) {
+    const b = new THREE.Group();
+    const hull = new THREE.Mesh(hullGeo(halfW, len, 0.8), mat(color, { roughness: 0.35 })); hull.position.y = 0.62; b.add(hull);
+    const rim = new THREE.Mesh(hullGeo(halfW * 1.04, len * 1.02, 0.1), mat(0xfaf5ea, { roughness: 0.4 })); rim.position.y = 0.68; b.add(rim);
+    const deck = new THREE.Mesh(hullGeo(halfW * 0.86, len * 0.9, 0.04), new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.8 })); deck.position.y = 0.52; b.add(deck);
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(halfW * 1.7, 0.08, 0.34), mat(0x9a6a3c, { roughness: 0.8 })); seat.position.set(0, 0.72, -len * 0.28); b.add(seat);
+    const motor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.3), mat(0x25323d, { roughness: 0.4 })); motor.position.set(0, 0.85, -len * 0.47); b.add(motor);
+    return b;
+  }
+  const SHOP_LOOK = {
+    ramen: { noren: ['ラーメン', '#b3202a', '#fff'], wall: 0x5a3a24, accent: 0xb3202a, keeper: { top: 0x1c1a1a, bottom: 0x1c1a1a, sleeve: 0.22, hem: 0.12, apron: 0xb3202a, shoes: 0x1c1a1a }, hat: 'towel' },
+    sushi: { noren: ['すし', '#22386b', '#fff'], wall: 0xcaa978, accent: 0x22386b, keeper: { top: 0xffffff, bottom: 0xffffff, sleeve: 0.5, hem: 0.12, apron: 0xf4f4f4, shoes: 0x1c1a1a }, hat: 'chef' },
+    pizza: { noren: ['ピザ', '#fff', '#fff', ['#1f8f4e', '#ffffff', '#d32f2f']], wall: 0xf3e6cf, accent: 0xd32f2f, keeper: { top: 0xffffff, bottom: 0x2b2b2b, sleeve: 0.22, hem: 0.12, apron: 0x1f8f4e, shoes: 0x1c1a1a }, hat: 'chef' },
+  };
   function spawnShop(food) {
-    const m = new THREE.Group();
+    const m = new THREE.Group(), L = SHOP_LOOK[food.id];
     const side = Math.random() < 0.5 ? -1 : 1;
     const x = rand(-5.5, 5.5);
-    const raft = new THREE.Group(); raft.position.x = clamp(x + side * 5.2, -13, 13) - x; raft.scale.setScalar(1.6); m.add(raft);
-    const deckM = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.35, 3.2), W.wood); deckM.position.y = 0.1; raft.add(deckM);
-    const hut = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.7, 2.0), W.wall); hut.position.y = 1.1; raft.add(hut);
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.0, 4), W.roof); roof.rotation.y = Math.PI / 4; roof.position.y = 2.45; raft.add(roof);
-    const noren = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.6), W.cloth); noren.position.set(0, 1.55, 1.02); raft.add(noren);
-    [-0.9, 0.9].forEach(lx => { const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), W.lantern); l.scale.y = 1.3; l.position.set(lx, 1.6, 1.15); raft.add(l); });
-    const label = makeLabel(food.shop, '#ff9d00'); label.position.set(0, 3.6, 0); raft.add(label);
+    const raft = new THREE.Group(); raft.position.x = clamp(x + side * 5.6, -13.5, 13.5) - x; raft.scale.setScalar(1.5); m.add(raft);
+    const barge = makeBoat(0x6b4a2e, 1.75, 5.2); barge.children[4].visible = false; barge.children[3].visible = false; raft.add(barge);
+    const wallM = new THREE.MeshStandardMaterial({ map: plankTex, color: L.wall, roughness: 0.85 });
+    const stall = new THREE.Group(); stall.position.set(0, 0.7, -0.5); raft.add(stall);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.9, 0.1), wallM); back.position.set(0, 0.95, -0.85); stall.add(back);
+    [-1.25, 1.25].forEach(sx => { const w = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.9, 1.7), wallM); w.position.set(sx, 0.95, 0); stall.add(w); });
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.9, 0.35), new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.7 })); counter.position.set(0, 0.45, 0.8); stall.add(counter);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.06, 0.5), mat(L.accent, { roughness: 0.3 })); top.position.set(0, 0.93, 0.82); stall.add(top);
+    // gabled tile roof
+    const tileM = new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.6 });
+    [-1, 1].forEach(sz => { const r = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.1, 1.35), tileM); r.position.set(0, 2.25, sz * 0.55); r.rotation.x = sz * 0.5; stall.add(r); });
+    const ridgeB = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.3, 10), mat(0x22303c)); ridgeB.rotation.z = Math.PI / 2; ridgeB.position.set(0, 2.57, 0); stall.add(ridgeB);
+    // noren with the shop's name, lanterns, sign
+    const nt = textTex(L.noren[0], L.noren[1], L.noren[2], 256, 96, L.noren[3]);
+    const noren = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.62), new THREE.MeshStandardMaterial({ map: nt, side: THREE.DoubleSide, roughness: 0.9 })); noren.position.set(0, 1.62, 1.0); stall.add(noren);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.7, 8), mat(0x3a2b22)); pole.rotation.z = Math.PI / 2; pole.position.set(0, 1.94, 1.0); stall.add(pole);
+    [-1.45, 1.45].forEach(lx => {
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), mat(0xe8443a, { emissive: 0xff3b2f, emissiveIntensity: 0.7 })); l.scale.y = 1.35; l.position.set(lx, 1.5, 1.05); stall.add(l);
+      [0.28, -0.28].forEach(cy => { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 12), mat(0x1c1a1a)); c.position.set(lx, 1.5 + cy, 1.05); stall.add(c); });
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex, color: 0xff8a5a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false })); glow.scale.set(1.1, 1.1, 1); glow.position.set(lx, 1.5, 1.1); stall.add(glow);
+    });
+    const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.7, 10), mat(0x55606b, { metalness: 0.5, roughness: 0.4 })); chimney.position.set(0.8, 2.6, -0.5); stall.add(chimney);
+    const keeper = makePerson('keeper_' + food.id, L.keeper, [0x2a1a12], L.hat); keeper.position.set(0.1, 0.02, 0.15); stall.add(keeper);
+    const label = makeLabel(food.shop, '#ff9d00'); label.position.set(0, 4.3, 0); raft.add(label);
     const mk = targetMarkers(m, SHOP_C);
-    addEnt({ kind: 'shop', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, raft });
+    addEnt({ kind: 'shop', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, raft, person: keeper, steamAt: chimney, phase: rand(0, 6) });
   }
   function spawnCustomer(who) {
-    const m = new THREE.Group();
+    const m = new THREE.Group(), C = OUTFITS[who];
     const side = Math.random() < 0.5 ? -1 : 1;
     const x = rand(-5.5, 5.5);
-    const boat = new THREE.Group(); boat.position.x = clamp(x + side * 4.6, -13, 13) - x; boat.scale.setScalar(1.6); m.add(boat);
-    const hull = new THREE.Mesh(new THREE.CylinderGeometry(1, 0.7, 0.7, 24, 1, false, 0, Math.PI * 2), W.hull); hull.scale.set(1.1, 1, 2.2); hull.position.y = 0.15; boat.add(hull);
-    const stripeM = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.02, 0.12, 24), W.hullStripe); stripeM.scale.set(1.1, 1, 2.2); stripeM.position.y = 0.38; boat.add(stripeM);
-    const person = new THREE.Group(); person.position.set(0, 0.5, 0.2); boat.add(person);
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.9, 16), mat([0xff7b54, 0x7b61ff, 0x2fb57a, 0xffd23f][Math.floor(Math.random() * 4)])); body.position.y = 0.55; person.add(body);
-    const headM = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 14), mat(0xf2c3a0)); headM.position.y = 1.25; person.add(headM);
-    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 20), mat(0xf3dfae)); hat.position.y = 1.45; person.add(hat);
-    const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.18, 16), mat(0xf3dfae)); hatTop.position.y = 1.55; person.add(hatTop);
-    const arm = new THREE.Group(); arm.position.set(0.3, 0.9, 0); person.add(arm);
-    const armM = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 10), mat(0xf2c3a0)); armM.position.y = 0.3; arm.add(armM);
-    const label = makeLabel(who, '#2fb57a'); label.position.set(0, 2.6, 0); boat.add(label);
+    const boat = new THREE.Group(); boat.position.x = clamp(x + side * 4.8, -13, 13) - x; boat.scale.setScalar(1.5); m.add(boat);
+    boat.add(makeBoat(C.boat));
+    const person = makePerson(who, C.o, C.hair, C.hat); person.scale.setScalar(C.scale || 1); person.position.set(0, 0.56, 0.5); boat.add(person);
+    if (C.kid) { const kid = makePerson('kid', { top: 0xff7b54, bottom: 0x39c6f0, sleeve: 0.17, hem: 0.5 }, [0x2a1a12]); kid.scale.setScalar(0.6); kid.position.set(-0.55, 0.56, 0.1); boat.add(kid); }
+    if (C.prop === 'rod') { const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 2.6, 6), mat(0x3a2b22)); rod.position.set(-0.75, 1.7, -0.9); rod.rotation.set(-0.7, 0, 0.25); boat.add(rod); }
+    if (C.prop === 'sail') {
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 4.2, 8), mat(0xdfe3e6, { metalness: 0.5 })); mast.position.set(0, 2.7, -0.5); boat.add(mast);
+      const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, 3.6); sh.lineTo(1.7, 0); sh.closePath();
+      const sail = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat(0xfff8ee, { side: THREE.DoubleSide, roughness: 0.9 })); sail.rotation.y = Math.PI / 2; sail.position.set(0.02, 1.0, -0.55); boat.add(sail);
+    }
+    if (C.prop === 'ring') { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 10, 24), mat(0xff5a2a)); ring.position.set(0.7, 0.95, -0.9); ring.rotation.x = 1.2; boat.add(ring); }
+    if (C.prop === 'parasol') {
+      const pp = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.3, 6), mat(0xdfe3e6)); pp.position.set(-0.5, 1.7, -0.6); boat.add(pp);
+      const can = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.4, 12), mat(0xff6f91, { side: THREE.DoubleSide })); can.position.set(-0.5, 2.9, -0.6); boat.add(can);
+    }
+    const label = makeLabel(who, '#2fb57a'); label.position.set(0, C.prop === 'sail' ? 5.2 : 3.4, 0); boat.add(label);
     const mk = targetMarkers(m, CUST_C);
-    addEnt({ kind: 'cust', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, arm, phase: rand(0, 6) });
+    addEnt({ kind: 'cust', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, person, boat, phase: rand(0, 6) });
   }
   const coinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.08, 24);
   function spawnCoins() {
@@ -1404,7 +1566,10 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
         e.pillar.visible = e.z < -22 && !e.gone;
         e.mesh.visible = e.z < 4.5;   // never let a passed boat or shop fill the camera
         e.ring.scale.setScalar(1 + Math.sin(T * 6) * 0.05);
-        if (e.arm) e.arm.rotation.z = -0.4 + Math.sin(T * 7 + e.phase) * 0.6;
+        if (e.person) { e.person.rotation.z = Math.sin(T * 6 + e.phase) * 0.07; e.person.position.y += Math.abs(Math.sin(T * 6 + e.phase)) * 0.0 ; }
+        if (e.boat) e.boat.rotation.z = Math.sin(T * 1.7 + e.phase) * 0.06;
+        if (e.raft) e.raft.rotation.z = Math.sin(T * 1.3 + e.phase) * 0.03;
+        if (e.steamAt && e.z < -4 && Math.random() < 0.5) { e.steamAt.getWorldPosition(_tw); emit(_tw.x, _tw.y + 0.5, _tw.z, rand(-0.4, 0.4), rand(1.5, 2.6), rand(-0.3, 0.3), rand(0.7, 1.2)); }
         if (playing && !e.gone && Math.abs(e.z) < 1.6 && Math.abs(e.x - px) < e.r && jumpY < 2) {
           e.gone = true; e.ring.visible = e.pillar.visible = e.arrow.visible = false;
           if (e.kind === 'shop' && phase === 'pickup') pickup();
@@ -1469,8 +1634,10 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     camY += (sy - camY) * Math.min(1, dt * 4);
     const sh = shake * 0.5 + bigAmt * 0.05;
     const fov = 62 + boost * 1.3; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 4); camera.updateProjectionMatrix(); }
-    camera.position.set(px * 0.6 + 1.0 + rand(-sh, sh), camY * 0.7 + 4.0 + jumpY * 0.4 + rand(-sh, sh), 8.0);
-    camera.lookAt(px * 0.8, camY * 0.6 + 1.3, -10);
+    const narrow = camera.aspect < 1, follow = narrow ? 0.97 : 0.86;
+    const wallAmt = clamp((-px - 9.8) / 8, 0, 1);            // on the wave face: pull back and out so the whole face is in view
+    camera.position.set(px * follow + (narrow ? 0.3 : 1.0) + wallAmt * 3.2 + rand(-sh, sh), camY * 0.7 + 4.0 + wallAmt * 1.6 + jumpY * 0.4 + rand(-sh, sh), 8.0 + wallAmt * 2.2 + (narrow ? 1.5 : 0));
+    camera.lookAt(px * Math.min(1, follow + 0.1) + wallAmt * 0.6, camY * 0.6 + 1.3 + wallAmt * 0.8, -10);
 
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
     if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) $('hint').classList.remove('show'); }
