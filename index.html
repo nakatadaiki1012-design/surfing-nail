@@ -1,4 +1,5 @@
 <title>出前サーファー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
 <style>
@@ -16,13 +17,13 @@
   color-scheme: light;
 }
 [hidden] { display: none !important; }
-html, body { height: 100%; margin: 0; overflow: hidden; background: #8fd6f2; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: #8fd6f2; touch-action: none; overscroll-behavior: none; }
 body {
   font-family: var(--body); color: var(--ink);
   touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-#stage { position: fixed; inset: 0; }
+#stage { position: fixed; inset: 0; touch-action: none; }
 #stage canvas { display: block; width: 100%; height: 100%; }
 .card { background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); }
 
@@ -109,7 +110,7 @@ body.touch #pad {
   padding: 0 max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
 }
 #stick, #tiltPad {
-  position: relative; pointer-events: auto; touch-action: none;
+  position: relative; pointer-events: none; touch-action: none;
   background: rgba(255, 250, 244, .28); border: 2px solid rgba(21, 48, 74, .55); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
 }
 #stick { width: 132px; height: 132px; border-radius: 50%; }
@@ -1745,27 +1746,35 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   function touchDown(e, onPad) {
     if (state !== 'play' || e.pointerType === 'mouse') return;
     e.preventDefault();
-    const left = onPad === 'stick' || (!onPad && e.clientX < innerWidth / 2);
+    // which hand is this? Normally by side of the screen, but if that hand is already down,
+    // the new finger must be the other hand, wherever it landed.
+    const sr = stageEl.getBoundingClientRect();
+    let left = onPad === 'stick' || (!onPad && e.clientX < sr.left + sr.width / 2);
+    if (onPad === 'tilt') left = false;
+    if (left && stick.id !== null && tiltId === null) left = false;
+    else if (!left && tiltId !== null && stick.id === null) left = true;
     if (left) {
       if (stick.id !== null) return;
       stick.id = e.pointerId; stick.t0 = performance.now(); stick.moved = false;
-      if (onPad) { const r = stEl.getBoundingClientRect(); stick.ox = r.left + r.width / 2; stick.oy = r.top + r.height / 2; moveStick(e); }
+      if (onPad === 'stick') { const r = stEl.getBoundingClientRect(); stick.ox = r.left + r.width / 2; stick.oy = r.top + r.height / 2; moveStick(e); }
       else { stick.ox = e.clientX; stick.oy = e.clientY; floatAt(stEl, e.clientX, e.clientY); }
     } else {
       if (tiltId !== null) return;
       tiltId = e.pointerId;
-      if (onPad) { const r = tpEl.getBoundingClientRect(); tiltOx = r.left + r.width / 2; moveTilt(e); }
+      if (onPad === 'tilt') { const r = tpEl.getBoundingClientRect(); tiltOx = r.left + r.width / 2; moveTilt(e); }
       else { tiltOx = e.clientX; floatAt(tpEl, e.clientX, e.clientY); }
     }
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
   }
-  [[stageEl, null], [stEl, 'stick'], [tpEl, 'tilt']].forEach(([el, kind]) => {
-    el.addEventListener('pointerdown', e => touchDown(e, kind));
-    el.addEventListener('pointermove', e => { if (e.pointerId === stick.id) moveStick(e); else if (e.pointerId === tiltId) moveTilt(e); });
-    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => el.addEventListener(t, e => {
-      if (e.pointerId === stick.id) endStick(t === 'pointerup'); else if (e.pointerId === tiltId) endTilt();
-    }));
-  });
+  stageEl.addEventListener('pointerdown', e => touchDown(e, null));   // the on-screen pads are only pictures: wherever you touch is the centre
+  // safety nets: a lift or cancel we somehow missed must never leave a hand stuck down,
+  // and the browser must not treat two thumbs as a pinch / scroll / long-press
+  ['pointerup', 'pointercancel'].forEach(t => addEventListener(t, e => {
+    if (e.pointerId === stick.id) endStick(t === 'pointerup'); else if (e.pointerId === tiltId) endTilt();
+  }));
+  addEventListener('pointermove', e => { if (e.pointerId === stick.id) moveStick(e); else if (e.pointerId === tiltId) moveTilt(e); });
+  ['touchstart', 'touchmove', 'gesturestart', 'gesturechange', 'contextmenu', 'dblclick'].forEach(t =>
+    document.addEventListener(t, e => { if (state === 'play') e.preventDefault(); }, { passive: false }));
   // on a computer the mouse does the right hand's job
   addEventListener('mousemove', e => {
     if (document.body.classList.contains('touch') || state !== 'play') return;
