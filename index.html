@@ -1011,7 +1011,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
   let slosh = 0, sloshV = 0, trayIn = 0, trayA = 0, trayAng = 0, rel = 0; // balance: food angle vs tray angle
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
-  let squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
+  let carveCool = 0, squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
   const keys = { left: false, right: false, down: false };
   const stick = { id: null, x: 0, jumped: false, down: false };
 
@@ -1293,10 +1293,10 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
         chainT -= dt; if (chainT <= 0 && mult > 1) mult = Math.max(1, mult - dt * 0.5);
         if (phase === 'deliver' && jumpY === 0 && Math.abs(rel) < limitNow() * 0.5) { balT += dt; if (balT >= 4) { balT = 0; toast(`ナイスバランス +${gain(40, 0.15)}`); } } else balT = Math.max(0, balT - dt * 2);
         // cutback: a hard carve one way, then straight back the other
-        carveT += dt;
+        carveT += dt; carveCool -= dt;
         if (jumpY === 0 && Math.abs(vx) > 7) {
           const sg = Math.sign(vx);
-          if (carveSign && sg !== carveSign && carveT < 1.3) { toast(`カットバック！ +${gain(60, 0.2)}`); for (let i = 0; i < 26; i++) emit(px, surfer.position.y + 0.2, rand(0, 1), -sg * rand(3, 8), rand(3, 7), rand(0, 3)); }
+          if (carveSign && sg !== carveSign && carveT < 1.3 && carveCool <= 0) { carveCool = 2; toast(`カットバック！ +${gain(60, 0.2)}`); for (let i = 0; i < 26; i++) emit(px, surfer.position.y + 0.2, rand(0, 1), -sg * rand(3, 8), rand(3, 7), rand(0, 3)); }
           if (sg !== carveSign) { carveSign = sg; carveT = 0; } else carveT = Math.min(carveT, 0.4);
         }
         // saving the food from the very edge without spilling is the finest skill in the game
