@@ -64,7 +64,7 @@ body {
 }
 #pop.show { opacity: 1; transform: translate(-50%, -60%); }
 #hint {
-  position: fixed; left: 50%; top: calc(150px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(182px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
   background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
 }
@@ -77,7 +77,7 @@ body {
 #big small { font-size: .55em; color: #fff; }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
 #mult {
-  position: fixed; left: 50%; top: calc(118px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; text-align: center;
+  position: fixed; left: 50%; top: calc(128px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; text-align: center;
   font-family: var(--display); color: var(--sun); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink);
 }
 #multNum { font-size: 30px; line-height: 1; display: inline-block; }
@@ -192,7 +192,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     <div id="taskHead"><span id="taskTag" class="shop">受け取り</span><span id="taskName">ラーメン屋へ</span></div>
     <div id="taskWhere"><span id="taskDist">あと 120m</span><span id="dir"></span></div>
     <div id="tipRow" class="lbl" hidden>チップ +<span id="tipNow">320</span>（急ぐほど多い）</div>
-    <div id="foodRow" hidden><div class="row" style="display:flex;justify-content:space-between"><span class="lbl">料理ののこり</span><span class="lbl" id="foodPct">100%</span></div><div class="bar" id="foodBar"><i></i></div></div>
+    <div id="foodRow" hidden><div class="row" style="display:flex;justify-content:space-between"><span class="lbl">のこりの料理</span><span class="lbl" id="foodPct">2 / 2 個</span></div><div class="bar" id="foodBar"><i></i></div></div>
   </div>
 </div>
 
@@ -208,7 +208,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 <div id="gaugeWrap" class="card" hidden><div id="pip"></div><div id="gaugeFoot"><div id="balBar"><i id="balMark"></i></div><div id="gaugeTxt">トレーを水平に！</div></div></div>
 <div id="pad" hidden>
   <div id="stick"><div id="knob"></div><span class="lab l">◀</span><span class="lab r">▶</span><span class="lab u">ジャンプ</span><span class="lab d">しゃがむ</span></div>
-  <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ トレーを傾ける ▶</span></div>
+  <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ たおれる方へ ▶</span></div>
 </div>
 
 <div id="title" class="overlay">
@@ -218,10 +218,10 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     <div class="how">
       <div><kbd>1</kbd><span><b>オレンジの光</b>のお店を通って、料理を受け取る</span></div>
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
-      <div><kbd>3</kbd><span>運ぶ間は<b>トレーを傾けて</b>バランスを取る。<b>曲がる方向に傾ける</b>とこぼれない</span></div>
+      <div><kbd>3</kbd><span>積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう</span></div>
     </div>
-    <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>左の波のカベに乗るとスピードアップ。はやく、こぼさず届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
-    <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらしてトレーを傾ける<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かしてトレーを傾ける</p>
+    <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
+    <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -254,9 +254,9 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.35, limit: 0.2, base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, limit: 0.27, base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, limit: 0.35, base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.3, tip: 4.6, base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, tip: 3.6, base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, tip: 2.2, base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -813,7 +813,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   };
   // ---------- the tray and the food she carries ----------
   const tray = new THREE.Group(); rider.add(tray);
-  tray.position.set(0.56, 1.205, 0.0);
+  tray.position.set(0.56, 1.205, 0.0); tray.scale.setScalar(1.3);   // big enough to read the pile from behind
   const lathe = (pts, m, seg = 40) => new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg), m);
   tray.add(lathe([[0, 0], [0.28, 0], [0.3, 0.008], [0.31, 0.03], [0.3, 0.03], [0.285, 0.014], [0, 0.012]], mat(0x1c1a1a, { roughness: 0.22, metalness: 0.25, side: THREE.DoubleSide })));
   const trayRim = new THREE.Mesh(new THREE.TorusGeometry(0.305, 0.006, 8, 48), mat(0xb3202a, { roughness: 0.25 })); trayRim.rotation.x = Math.PI / 2; trayRim.position.y = 0.03; tray.add(trayRim);
@@ -926,7 +926,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     if (!src.visible) return;
     src.updateWorldMatrix(true, false); src.matrixWorld.decompose(_dp, _dq, _ds);
     const m = src.clone(true); m.position.copy(_dp); m.quaternion.copy(_dq); m.scale.copy(_ds); m.visible = true; scene.add(m);
-    const side = rel > 0 ? -1 : 1;
+    const side = lean > 0 ? 1 : -1;
     debris.push({ m, vx: side * rand(0.7, 1.7) + vx * 0.3, vy: rand(1.2, 2.4), vz: rand(-0.2, 0.5), rx: rand(-7, 7), rz: rand(-7, 7) });
   }
   // a stream of soup pouring over the rim
@@ -936,18 +936,53 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   const _tw = new THREE.Vector3();
   const closeCam = new THREE.PerspectiveCamera(40, 208 / 150, 0.05, 400);
   const foodMeshes = {};
-  FOODS.forEach(f => { const m = foodModel(f.id); m.visible = false; tray.add(m); foodMeshes[f.id] = m; });
+  FOODS.forEach(f => { foodMeshes[f.id] = foodModel(f.id); foodMeshes[f.id].traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); });
   surfer.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });   // she shades her own board and tray
-  function showFood(id, left) {
-    FOODS.forEach(f => { foodMeshes[f.id].visible = f.id === id; });
-    if (!id) return;
-    const m = foodMeshes[id];
-    if (m.userData.level) { m.userData.level.position.y = 0.075 + 0.075 * left; m.userData.level.scale.setScalar(0.72 + 0.28 * left); m.userData.level.visible = left > 0.02; }
-    m.scale.setScalar(food && food.big ? 1.18 : 1);
-    if (m.userData.tops) m.userData.tops.forEach(([th, objs]) => objs.forEach(o => { o.visible = left > th; }));
-    if (m.userData.pieces) m.userData.pieces.forEach((p, i) => { p.visible = left > i * 0.33; });
-    if (m.userData.slices) m.userData.slices.forEach((p, i) => { p.visible = left > i / 6; });
+  // THE STACK: dishes piled on the tray, each one sitting on the one below, so the pile bends as it leans
+  const stackG = new THREE.Group(); tray.add(stackG);
+  let stackNodes = [];
+  const ITEM_H = { ramen: 0.168, sushi: 0.092, pizza: 0.06 };
+  const boxTex = canvasTex(128, (g, S) => { g.fillStyle = '#e9d2a6'; g.fillRect(0, 0, S, S); g.strokeStyle = '#c0392b'; g.lineWidth = 10; g.strokeRect(12, 12, S - 24, S - 24); g.fillStyle = '#c0392b'; g.beginPath(); g.arc(S / 2, S / 2, 26, 0, 7); g.fill(); g.fillStyle = '#f6c453'; g.beginPath(); g.arc(S / 2, S / 2, 17, 0, 7); g.fill(); });
+  function lowerItem(id) {
+    const g = new THREE.Group();
+    if (id === 'ramen') {          // a lidded bowl
+      g.add(lathe([[0.075, 0], [0.08, 0.022], [0.11, 0.045], [0.165, 0.1], [0.196, 0.15], [0.203, 0.172]], mat(0xb3202a, { roughness: 0.2, side: THREE.DoubleSide })));
+      g.add(lathe([[0.205, 0.17], [0.19, 0.185], [0.12, 0.2], [0.07, 0.204], [0.07, 0.215], [0, 0.215]], mat(0x1c1a1a, { roughness: 0.25 })));
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.005, 6, 40), mat(0xf2d27a, { metalness: 0.5, roughness: 0.3 })); band.rotation.x = Math.PI / 2; band.position.y = 0.16; g.add(band);
+      g.scale.setScalar(0.78);
+    } else if (id === 'sushi') {   // a lacquer sushi tub
+      const tub = new THREE.Mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.085, 32), [mat(0x1c1a1a, { roughness: 0.2 }), mat(0xb3202a, { roughness: 0.25 }), mat(0x1c1a1a)]); tub.position.y = 0.045; g.add(tub);
+      const line = new THREE.Mesh(new THREE.TorusGeometry(0.212, 0.004, 6, 40), mat(0xf2d27a, { metalness: 0.6, roughness: 0.3 })); line.rotation.x = Math.PI / 2; line.position.y = 0.07; g.add(line);
+    } else {                        // a pizza box
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.055, 0.46), [mat(0xd9b27c), mat(0xd9b27c), new THREE.MeshStandardMaterial({ map: boxTex, roughness: 0.8 }), mat(0xcfa76c), mat(0xd9b27c), mat(0xd9b27c)]);
+      box.position.y = 0.03; g.add(box);
+    }
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    return g;
   }
+  function clearStack() {
+    if (stackNodes.length) stackG.remove(stackNodes[0]);
+    stackNodes = [];
+    FOODS.forEach(f => { const m = foodMeshes[f.id]; if (m.parent) m.parent.remove(m); });
+  }
+  function buildStack(id, n) {
+    clearStack();
+    let parent = stackG;
+    for (let i = 0; i < n; i++) {
+      const node = new THREE.Group(); node.position.y = i === 0 ? 0.013 : ITEM_H[id];
+      const top = i === n - 1, dish = top ? foodMeshes[id] : lowerItem(id);
+      if (top) {   // the open dish on top is the one you can see the food in
+        dish.position.set(0, 0, 0); dish.visible = true; dish.scale.setScalar(id === 'ramen' ? 0.78 : 1);
+        const u = dish.userData;
+        if (u.level) { u.level.position.y = 0.15; u.level.scale.setScalar(1); u.level.visible = true; u.level.rotation.z = 0; }
+        if (u.tops) u.tops.forEach(([, objs]) => objs.forEach(o => { o.visible = true; }));
+        if (u.pieces) u.pieces.forEach(pc => { pc.visible = true; });
+        if (u.slices) u.slices.forEach(sl => { sl.visible = true; });
+      }
+      node.add(dish); parent.add(node); parent = node; stackNodes.push(node);
+    }
+  }
+  const stackHeight = () => (stackNodes.length ? (stackNodes.length - 1) * ITEM_H[food.id] + 0.2 : 0.2) * 1.3;
 
   // ---------- labels drawn on canvas ----------
   function makeLabel(text, bg, fg = '#fff') {
@@ -1192,7 +1227,9 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   let phase = 'pickup', food = null, foodLeft = 1, legTime = 0, targetWait = 1.2, airMax = 0, customer = '';
   let camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
   let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
-  let slosh = 0, sloshV = 0, trayIn = 0, trayA = 0, trayAng = 0, rel = 0; // balance: food angle vs tray angle
+  let sloshV = 0, trayIn = 0, trayA = 0, rel = 0;
+  let lean = 0, leanV = 0, graceT = 0, gustT = 3;      // balance: how far the stack is leaning, and how fast
+  const LEAN_MAX = 0.5;
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
   let carveCool = 0, squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
@@ -1203,7 +1240,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   function nextFood() {
     const base = orderIdx < 3 ? FOODS[2 - orderIdx] : FOODS[Math.floor(Math.random() * FOODS.length)];
     const f = Object.assign({}, base);
-    if (orderIdx >= 4 && Math.random() < 0.4) { f.big = true; f.name = '大盛り' + f.name; f.fragile *= 1.25; f.limit *= 0.88; f.base = Math.round(f.base * 1.5); }
+    f.n = clamp(2 + Math.floor(orderIdx / 2), 2, 6);            // orders grow: 2 portions at first, up to a tower of 6
+    f.name = `${base.name}${f.n}人前`;
     orderIdx++; return f;
   }
   // every stylish move feeds one combo multiplier; delivering cashes it in
@@ -1217,7 +1255,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   function breakChain(amount, say) { if (mult > 1.05 && say) toast(amount >= 4 ? 'コンボ切れ…' : '倍率ダウン…', true); mult = Math.max(1, mult - amount); }
   function newLeg(p, keepFood) {
     phase = p; legTime = 0; targetWait = 1.0;
-    if (p === 'pickup') { if (!keepFood) food = nextFood(); foodLeft = 1; showFood(null); }
+    if (p === 'pickup') { if (!keepFood) food = nextFood(); foodLeft = 1; clearStack(); }
     else { customer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; }
   }
   function resetGame() {
@@ -1225,7 +1263,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; delivered = 0; clean = 0;
     mult = 1; maxMult = 1; chainT = 0; starsTotal = 0; orderIdx = 0; boost = 0; balT = 0;
-    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; slosh = 0; sloshV = 0; trayA = 0;
+    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; sloshV = 0; trayA = 0; lean = 0; leanV = 0;
     nextBig = rand(9, 11); bigLeft = 0; bigAmt = 0; ridges.forEach(g => { g.on = false; g.z = -999; g.h = 0; }); setNo = 0; debris.forEach(d => scene.remove(d.m)); debris = []; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
     popQ.length = 0;
     newLeg('pickup');
@@ -1259,10 +1297,10 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     $('tipNow').textContent = Math.max(0, Math.round(320 - legTime * 22));
     const tag = $('taskTag');
     if (phase === 'pickup') { tag.textContent = '受け取り'; tag.className = 'shop'; $('taskName').textContent = `${food.shop}へ`; }
-    else { tag.textContent = 'お届け'; tag.className = 'cust'; $('taskName').textContent = `${food.name}を${customer}へ`; }
+    else { tag.textContent = 'お届け'; tag.className = 'cust'; $('taskName').textContent = food.name; }
     const t = targetEnt();
     if (t && t.z < 0) {
-      $('taskDist').textContent = `あと ${Math.round(-t.z)}m`;
+      $('taskDist').textContent = (phase === 'deliver' ? customer + 'まで ' : 'あと ') + `${Math.round(-t.z)}m`;
       const dx = t.x - px;
       $('dir').textContent = Math.abs(dx) < 1.6 ? 'まっすぐ' : dx < 0 ? '← 左' : '右 →';
     } else { $('taskDist').textContent = 'さがし中…'; $('dir').textContent = ''; }
@@ -1270,7 +1308,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     const fb = $('foodBar').firstElementChild;
     fb.style.width = (foodLeft * 100) + '%';
     fb.style.background = foodLeft > 0.7 ? '#2fb57a' : foodLeft > 0.35 ? '#ffc93c' : '#e8344a';
-    $('foodPct').textContent = Math.round(foodLeft * 100) + '%';
+    $('foodPct').textContent = `${stackNodes.length} / ${food.n} 個`;
     $('gaugeWrap').hidden = phase !== 'deliver';
     if (phase === 'deliver') drawGauge();
   }
@@ -1278,9 +1316,9 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   // balance bar under the close-up: the marker leaves the green zone as the food nears the edge
   function drawGauge() {
     const n = rel / limitNow(), danger = Math.abs(n) > 1, warn = Math.abs(n) > 0.6;
-    $('balMark').style.left = (50 - clamp(n, -1.3, 1.3) / 1.3 * 50) + '%';   // marker = where the food has slid to
+    $('balMark').style.left = (50 + clamp(n, -1.3, 1.3) / 1.3 * 50) + '%';   // marker = which way the pile is leaning
     $('gaugeWrap').classList.toggle('danger', danger);
-    $('gaugeTxt').textContent = danger ? 'こぼれてる！' : warn ? (rel > 0 ? '右へ傾けて →' : '← 左へ傾けて') : 'いいバランス';
+    $('gaugeTxt').textContent = danger ? 'たおれる！' : warn ? (rel > 0 ? '右へ動かして →' : '← 左へ動かして') : 'いいバランス';
     $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
 
@@ -1293,36 +1331,24 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     if (rg) { rg.just = true; vy = 11.5; beep(660, 0.3, 'triangle', 0.08, 2); }   // timed with the crest
     for (let i = 0; i < 14; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(2, 5), rand(0, 4));
   }
-  // anything that jolts the tray spills some of the food
-  function spill(amount, why) {
-    if (phase !== 'deliver' || amount <= 0) return;
-    const before = foodLeft;
-    foodLeft = Math.max(0, foodLeft - amount * food.fragile);
-    const ud = foodMeshes[food.id].userData, crossed = th => before > th && foodLeft <= th;
-    if (ud.tops) ud.tops.forEach(([th, objs]) => { if (crossed(th)) objs.forEach(dropPiece); });
-    if (ud.pieces) ud.pieces.forEach((pc, i) => { if (crossed(i * 0.33)) dropPiece(pc); });
-    if (ud.slices) ud.slices.forEach((sl, i) => { if (crossed(i / 6)) dropPiece(sl); });
-    showFood(food.id, foodLeft);
-    const lost = before - foodLeft;
-    spillAcc += lost;
-    if (spillAcc > 0.05) { splat(Math.min(4, 1 + Math.round(spillAcc * 12))); spillAcc = 0; beep(140, 0.18, 'sawtooth', 0.07, 0.5); beep(900, 0.08, 'square', 0.03, 0.3, 0.03); }
-    if (lost > 0.04 && spillCool <= 0) {
-      spillCool = 0.6; breakChain(0.5, true);
-      hint(`${why}で こぼれた！ -${Math.round(lost * 100)}%`);
-      const b = $('foodBar'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
-      sfx.bad();
-      const wp = new THREE.Vector3(); tray.getWorldPosition(wp);
-      for (let i = 0; i < 46; i++) emitFood(wp.x + rand(-0.18, 0.18), wp.y + 0.15, wp.z + rand(-0.18, 0.18), rand(-2, 2), rand(0.8, 3), rand(-1.2, 1.2));
-      if (food.id === 'ramen') for (let i = 0; i < 12; i++) emitFood(wp.x + rand(-0.15, 0.15), wp.y + 0.2, wp.z, rand(-1.5, 1.5), rand(1.5, 3.2), rand(-1, 1), 0xf3dc9a, 0.9);   // noodles
-    }
-    if (foodLeft <= 0) {
-      pop(`${food.name}が ぜんぶこぼれた…`, '#ffd0dc'); breakChain(9, false);
+  // the top dish goes over the side
+  function dropTop(why) {
+    if (phase !== 'deliver' || !stackNodes.length) return;
+    const node = stackNodes.pop();
+    node.getWorldPosition(_tw);
+    dropPiece(node); node.parent.remove(node);
+    foodLeft = stackNodes.length / food.n;
+    breakChain(0.5, true); splat(3); sfx.bad(); beep(140, 0.2, 'sawtooth', 0.08, 0.5);
+    hint(`${why} 1つ落とした！（のこり ${stackNodes.length}）`);
+    const b = $('foodBar'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+    for (let i = 0; i < 40; i++) emitFood(_tw.x + rand(-0.18, 0.18), _tw.y + 0.1, _tw.z + rand(-0.18, 0.18), rand(-2, 2) + Math.sign(lean) * 1.5, rand(0.8, 3), rand(-1.2, 1.2));
+    if (!stackNodes.length) {
+      pop('ぜんぶ落としてしまった…', '#ffd0dc'); breakChain(9, false);
       ents.filter(e => e.kind === 'cust').forEach(e => { e.gone = true; });
       newLeg('pickup', true);
     }
   }
   const SPLAT_COL = { ramen: ['#d99a4e', '#c98436', '#f3dc9a'], sushi: ['#fbf9f2', '#ff8552', '#c9283a'], pizza: ['#f6c453', '#c0392b', '#e8a23a'] };
-  let spillAcc = 0;
   function splat(count) {
     const box = $('splats'), cols = SPLAT_COL[food.id];
     for (let i = 0; i < count; i++) {
@@ -1339,20 +1365,20 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     const cols = [0xff4f8b, 0xffd23f, 0x3fe0a8, 0x39c6f0, 0xffffff, 0xff9d00];
     for (let i = 0; i < 90; i++) emitFood(px + rand(-1.2, 1.2), surfer.position.y + rand(1.5, 3), rand(-1, 1), rand(-4, 4), rand(2, 7), rand(-3, 1), cols[i % cols.length], rand(0.9, 1.6), 5);
   }
-  const limitNow = () => food.limit * (1 + (1 - foodLeft) * 0.8);   // less left in the bowl = harder to spill
+  const limitNow = () => LEAN_MAX;
   function pickup() {
-    newLeg('deliver'); showFood(food.id, 1);
+    newLeg('deliver'); buildStack(food.id, food.n); lean = 0; leanV = 0; graceT = 1.5;
     sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
-    hint('曲がる方向にトレーを傾けよう！');
+    hint('倒れそうな方へ 手を動かして支えよう！');
   }
   function deliver() {
     const tip = Math.max(0, Math.round(320 - legTime * 22));
     const m = bigAmt > 0.5 ? 2 : 1;
-    const stars = foodLeft >= 0.85 && legTime <= 17 ? 3 : foodLeft >= 0.55 ? 2 : 1;
+    const stars = stackNodes.length === food.n && legTime <= 18 ? 3 : foodLeft >= 0.6 ? 2 : 1;
     if (stars === 3) clean++;
     starsTotal += stars;
     const usedMult = mult;
-    const pts = Math.round((food.base * foodLeft + tip) * m * mult * (stars === 3 ? 1.2 : 1));
+    const pts = Math.round((food.base * 0.55 * stackNodes.length + tip) * m * mult * (stars === 3 ? 1.2 : 1));
     score += pts; delivered++; timeLeft += 6;
     mult = Math.min(5, mult + (stars === 3 ? 0.5 : 0.2)); maxMult = Math.max(maxMult, mult); chainT = 6;
     pop(`${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} お届け！ +${pts}`, stars === 3 ? '#ffd23f' : '#fff');
@@ -1364,8 +1390,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     invuln = 1.6; shake = 0.6; speed *= 0.6;
     timeLeft -= 3; sfx.hit(); flash();
     pop('ドボン！ -3秒', '#ffd0dc'); breakChain(9, true); boost = 0;
-    spill(0.2, 'ぶつかった');
-    sloshV += (Math.random() < 0.5 ? -1 : 1) * rand(1.8, 2.6);
+    sloshV += (Math.random() < 0.5 ? -1 : 1) * rand(2.4, 3.0);   // a crash rocks the pile hard, but a quick hand can still save it
+    if (phase === 'deliver') hint('ぶつかって 大きくぐらついた！ 立て直して！');
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
   function endGame() {
@@ -1422,7 +1448,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       }
       if (jumpY <= 0) {
         // score the tricks; every one of them shakes the tray in proportion to how hard it was
-        const carry = phase === 'deliver' ? 1 + food.fragile * 0.5 : 1;   // doing it with food in hand is worth more
+        const carry = phase === 'deliver' ? 1 + food.fragile * 0.3 + stackNodes.length * 0.15 : 1;   // doing it with food in hand is worth more
         const turns = Math.abs(spinA) / (Math.PI * 2), full = Math.floor(turns + 0.2), frac = turns - Math.floor(turns);
         let jolt = 0;
         if (full >= 1) { pop(`${full * 360}！ +${gain(Math.round(150 * full * (full + 1) / 2 * carry), 0.3 * full)}`, '#ffd23f'); jolt += 1.0 * full; sfx.perfect(); }
@@ -1513,17 +1539,29 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     bigAmt += ((bigLeft > 0 ? 1 : 0) - bigAmt) * Math.min(1, dt * 1.2);
     dist += speed * dt;
 
-    // BALANCE. The food leans the way physics pushes it (turning, wave slope, bumps);
-    // the right hand tilts the tray. If the two angles drift too far apart, it spills.
-    const chop = 0.012 + bigAmt * 0.05 + (px < WALL_X ? 0.03 : 0) + Math.abs(vx) * 0.002;
-    const want = (clamp(ax, -90, 90) * 0.0055 + (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * chop) * (crouch ? 0.7 : 1);
-    sloshV += ((want - slosh) * 16 - sloshV * (crouch ? 6.5 : 3.4)) * dt;   // slow, heavy slosh: readable and catchable
-    slosh = clamp(slosh + sloshV * dt, -0.9, 0.9);
-    trayA += (trayIn * 0.55 - trayA) * Math.min(1, dt * 14);
-    const roll = -Math.atan((waveH(px + 0.5, 0) - waveH(px - 0.5, 0))) * 0.4;   // the board's own lean (big on the wave face)
-    trayAng = roll + trayA;
-    rel = slosh - trayAng;
-    if (playing && phase === 'deliver') spill(Math.max(0, Math.abs(rel) - limitNow()) * dt * 1.8, 'バランスがくずれて');
+    // BALANCE. The stack is an upside-down pendulum: left alone it tips further and further.
+    // The right hand slides the tray under it: push toward the side it is falling to.
+    // Taller stacks and sloshier food tip faster; turning, wave faces, chop and landings all shove it.
+    trayA += (trayIn - trayA) * Math.min(1, dt * 12);
+    if (playing && phase === 'deliver' && stackNodes.length) {
+      const n = stackNodes.length, steady = crouch ? 0.6 : 1;
+      const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady;
+      const A = food.tip * (1 + 0.12 * (n - 2)) * steady;
+      const roll = -Math.atan(waveH(px + 0.5, 0) - waveH(px - 0.5, 0)) * 0.5;       // the board's own lean (big on the wave face)
+      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.22 + bigAmt * 0.35 + Math.abs(vx) * 0.02 + (px < WALL_X ? 0.2 : 0));
+      leanV += sloshV * 0.42; sloshV = 0;                                            // jolts from tricks, landings and near misses
+      leanV += (A * (lean + roll * 0.6 - trayA * 0.62) - clamp(ax, -90, 90) * 0.022 * sens + chop * sens - leanV * 1.1) * dt;
+      // every few seconds the sea gives the pile an unannounced shove
+      gustT -= dt; if (gustT <= 0) { gustT = rand(2.2, 4.2); leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.25, 0.5) * sens; }
+      lean += leanV * dt; graceT -= dt;
+      if (Math.abs(lean) > LEAN_MAX && graceT <= 0) {
+        const sg = Math.sign(lean);
+        dropTop('バランスをくずして');
+        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 0.8;                // the rest of the pile rocks back: a moment to recover
+      }
+      lean = clamp(lean, -0.7, 0.7);
+    } else { lean *= Math.pow(0.02, dt); leanV = 0; sloshV = 0; }
+    rel = lean;
 
     if (playing) {
       // the next shop / customer shows up a moment after the last one
@@ -1553,35 +1591,23 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     // carving throws a fan of spray off the outside rail
     if (jumpY === 0 && Math.abs(vx) > 5) for (let i = 0; i < 3; i++) emit(px - Math.sign(vx) * 0.5, sy + 0.15, rand(0.2, 1.4), -Math.sign(vx) * rand(2, 6), rand(2, 5.5), rand(0, 3));
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
-    tray.rotation.set(0, 0, -trayA);
-    if (food) {
-      const n = phase === 'deliver' ? clamp(rel / limitNow(), -1.5, 1.5) : 0;
-      // ramen: the soup surface tips until it reaches the rim exactly at the limit
-      const soupM = foodMeshes.ramen.userData.level;
-      const reach = Math.atan((0.172 - soupM.position.y - 0.013) / (0.186 * soupM.scale.x));
-      soupM.rotation.z = -n * reach;
-      // sushi / pizza: the food slides across the tray and hangs over the edge at the limit
-      foodMeshes.sushi.position.x = -n * 0.075;
-      foodMeshes.sushi.userData.pieces.forEach((p, i) => { p.position.x = (i - 1) * 0.13 - n * 0.035; p.rotation.z = n * 0.2; });
-      foodMeshes.pizza.position.x = -n * 0.06;
-      foodMeshes.pizza.userData.slices.forEach(sl => { sl.position.x = -n * 0.05; });
-      // the tray rim glows red as it gets close
-      const hot = clamp((Math.abs(n) - 0.55) / 0.45, 0, 1) * (0.6 + 0.4 * Math.sin(T * 14));
-      trayRim.material.emissive.setRGB(hot, 0, 0); trayRim.scale.setScalar(1 + hot * 0.03);
-      // spilling: bits of food fly off the low side
-      const pouring = playing && phase === 'deliver' && Math.abs(n) > 1;
-      stream.visible = pouring && food.id === 'ramen';
-      if (pouring) {
-        tray.getWorldPosition(_tw);
-        const sd = -Math.sign(n);
-        stream.position.set(_tw.x + sd * 0.2, _tw.y + 0.17, _tw.z); stream.rotation.z = sd * 0.35 + Math.sin(T * 30) * 0.05; stream.scale.set(1 + Math.sin(T * 23) * 0.25, 0.7 + (Math.abs(n) - 1) * 1.2, 1);
-        for (let i = 0; i < 5; i++) emitFood(_tw.x - Math.sign(n) * 0.22, _tw.y + 0.16, _tw.z + rand(-0.1, 0.1), -Math.sign(n) * rand(0.6, 1.6), rand(0.4, 1.4), rand(-0.4, 0.4));
-      }
+    tray.position.x = 0.56 + trayA * 0.07;                       // the hand visibly slides under the pile
+    {
+      const nSt = stackNodes.length, nn = lean / LEAN_MAX;
+      const hot = clamp((Math.abs(nn) - 0.55) / 0.45, 0, 1);
+      stackNodes.forEach((node, i) => {
+        node.rotation.z = -lean * (i === 0 ? 0.55 : 0.45 / Math.max(1, nSt - 1)) + Math.sin(T * 38 + i * 1.7) * 0.012 * hot;   // rattles when it is about to go
+        node.position.x = i === 0 ? 0 : -lean * 0.012;
+      });
+      if (nSt && food.id === 'ramen') foodMeshes.ramen.userData.level.rotation.z = clamp(lean, -0.4, 0.4);   // the soup stays level while the bowl tips
+      trayRim.material.emissive.setRGB(hot * (0.6 + 0.4 * Math.sin(T * 14)), 0, 0);
+      stream.visible = false;
     }
-    // close-up camera sits just behind the tray and stays level, so the tilt is easy to read
+    // close-up camera frames the whole pile from just behind, and stays level so the lean is easy to read
     tray.getWorldPosition(_tw);
-    closeCam.position.set(_tw.x, _tw.y + 0.5, _tw.z + 0.78);
-    closeCam.lookAt(_tw.x, _tw.y + 0.07, _tw.z);
+    const sh2 = stackHeight();
+    closeCam.position.set(_tw.x, _tw.y + 0.3 + sh2 * 0.55, _tw.z + 0.8 + sh2 * 0.85);
+    closeCam.lookAt(_tw.x, _tw.y + sh2 * 0.45, _tw.z);
     shadow.position.set(px + 0.3, sy + 0.12, 0.3);
     shadow.rotation.set(-Math.PI / 2 - Math.atan(dhz) * 0.8, 0, 0);
     shadow.material.opacity = clamp(1 - jumpY * 0.3, 0.2, 1);
@@ -1787,7 +1813,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
     $('hud').hidden = false; $('help').hidden = false;
-    $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウス左右でトレーを傾ける';
+    $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
     $('pad').hidden = false; trayIn = 0;
     updateHUD();
     pop('出前スタート！', '#ffffff');
@@ -1799,7 +1825,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   });
 
-  food = Object.assign({}, FOODS[2]);
+  food = Object.assign({ n: 2 }, FOODS[2]);
   requestAnimationFrame(loop);
 })();
 </script>
