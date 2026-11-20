@@ -2,7 +2,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
 <style>
-/* Layout: full-screen 3D sea seen from behind the surfer; one slim HUD strip at the top; drag anywhere to steer. One sunny look, single theme. */
+/* Layout: full-screen 3D sea seen from behind the surfer; one slim HUD strip at the top; left thumb surfs, right thumb balances the tray. One sunny look, single theme. */
 :root {
   --ink: #15304a;
   --paper: #fffaf4;
@@ -80,9 +80,36 @@ body {
   font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: none; white-space: nowrap;
 }
 /* where your finger went down, and where it is now */
-#touchRing, #touchDot { position: fixed; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%); }
-#touchRing { width: 96px; height: 96px; border: 2px solid rgba(255,255,255,.7); background: rgba(255,255,255,.12); }
-#touchDot { width: 40px; height: 40px; background: rgba(255,250,244,.9); border: 2px solid var(--ink); }
+/* two thumbs: left stick = surf, right pad = tilt the tray */
+#pad { display: none; }
+body.touch #pad {
+  display: flex; justify-content: space-between; align-items: flex-end; position: fixed; left: 0; right: 0; bottom: 0; pointer-events: none;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+}
+#stick, #tiltPad {
+  position: relative; pointer-events: auto; touch-action: none;
+  background: rgba(255, 250, 244, .28); border: 2px solid rgba(21, 48, 74, .55); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+}
+#stick { width: 132px; height: 132px; border-radius: 50%; }
+#tiltPad { width: 168px; height: 84px; border-radius: 42px; }
+#knob, #tiltKnob {
+  position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
+  background: rgba(255, 250, 244, .95); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
+}
+#tiltKnob { background: #ffb347; }
+.lab { position: absolute; font-weight: 800; font-size: 11px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); pointer-events: none; white-space: nowrap; }
+#stick .l { left: 8px; top: 50%; transform: translateY(-50%); }
+#stick .r { right: 8px; top: 50%; transform: translateY(-50%); }
+#stick .u { left: 50%; top: 6px; transform: translateX(-50%); }
+#tiltPad .t { left: 50%; top: -18px; transform: translateX(-50%); }
+#gaugeWrap {
+  position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 8px 6px; text-align: center; pointer-events: none;
+}
+body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(124px + env(safe-area-inset-bottom, 0px)); }
+#gaugeWrap.danger { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a; }
+#gauge { width: 152px; height: 100px; display: block; }
+#gaugeTxt { font-size: 11px; font-weight: 800; }
 
 .overlay {
   position: fixed; inset: 0; display: grid; place-items: center;
@@ -141,7 +168,11 @@ body {
 <div id="hint"></div>
 <div id="flash"></div>
 <div id="help" hidden></div>
-<div id="touchRing" hidden></div><div id="touchDot" hidden></div>
+<div id="gaugeWrap" class="card" hidden><canvas id="gauge"></canvas><div id="gaugeTxt">トレーを水平に！</div></div>
+<div id="pad" hidden>
+  <div id="stick"><div id="knob"></div><span class="lab l">◀</span><span class="lab r">▶</span><span class="lab u">ジャンプ</span></div>
+  <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ トレーを傾ける ▶</span></div>
+</div>
 
 <div id="title" class="overlay">
   <div class="panel card">
@@ -150,10 +181,10 @@ body {
     <div class="how">
       <div><kbd>1</kbd><span><b>オレンジの光</b>のお店を通って、料理を受け取る</span></div>
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
-      <div><kbd>3</kbd><span><b>急に曲がる・ジャンプ・ぶつかる</b>と料理がこぼれる</span></div>
+      <div><kbd>3</kbd><span>運ぶ間は<b>トレーを傾けて</b>バランスを取る。<b>曲がる方向に傾ける</b>とこぼれない</span></div>
     </div>
-    <p class="small">はやく、こぼさず届けるほどチップが増えるよ。届けるたびに +6秒。<br>左の大波のカベを登って、てっぺんまで行くとエアリアル！（料理を持っているとこぼれる）</p>
-    <p class="small"><b>スマホ</b>：指1本で、左右にずらして移動・上にはじいてジャンプ<br><b>パソコン</b>：← → 移動 ／ ↑ または スペース でジャンプ</p>
+    <p class="small">はやく、こぼさず届けるほどチップが増えるよ。届けるたびに +6秒。<br>左の大波のカベを登って、てっぺんまで行くとエアリアル！（料理を持っていると着地で大きくゆれる）</p>
+    <p class="small"><b>スマホ</b>：左手のスティックで移動・上にはじいてジャンプ／右手のパッドでトレーを傾ける<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ／マウスを左右に動かしてトレーを傾ける</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -185,9 +216,9 @@ body {
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.35, base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.35, limit: 0.2, base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, limit: 0.27, base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, limit: 0.35, base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -624,10 +655,11 @@ body {
   let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, delivered = 0, clean = 0;
   let phase = 'pickup', food = null, foodLeft = 1, legTime = 0, targetWait = 1.2, airMax = 0, customer = '';
   let camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
-  let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, tilt = 0, tiltV = 0, spillCool = 0;
+  let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
+  let slosh = 0, sloshV = 0, trayIn = 0, trayA = 0, trayAng = 0, rel = 0; // balance: food angle vs tray angle
   let nextBig = 20, bigLeft = 0;
   const keys = { left: false, right: false };
-  const drag = { id: null, x0: 0, y0: 0, x: 0, steer: 0, jumped: false };
+  const stick = { id: null, x: 0, jumped: false };
 
   function newLeg(p) {
     phase = p; legTime = 0; targetWait = 1.0;
@@ -638,7 +670,7 @@ body {
     clearEnts();
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; delivered = 0; clean = 0;
-    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; tilt = 0; tiltV = 0;
+    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; slosh = 0; sloshV = 0; trayA = 0;
     nextBig = rand(22, 28); bigLeft = 0; bigAmt = 0; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
     popQ.length = 0;
     newLeg('pickup');
@@ -679,6 +711,55 @@ body {
     fb.style.width = (foodLeft * 100) + '%';
     fb.style.background = foodLeft > 0.7 ? '#2fb57a' : foodLeft > 0.35 ? '#ffc93c' : '#e8344a';
     $('foodPct').textContent = Math.round(foodLeft * 100) + '%';
+    $('gaugeWrap').hidden = phase !== 'deliver';
+    if (phase === 'deliver') drawGauge();
+  }
+
+  // side view of the tray: the clearest way to see how close you are to spilling
+  const gc = $('gauge'), gx = gc.getContext('2d');
+  function drawGauge() {
+    const d = Math.min(devicePixelRatio, 2);
+    if (gc.width !== 152 * d) { gc.width = 152 * d; gc.height = 100 * d; }
+    gx.setTransform(d, 0, 0, d, 0, 0); gx.clearRect(0, 0, 152, 100);
+    const lim = limitNow(), n = rel / lim, danger = Math.abs(n) > 1, warn = Math.abs(n) > 0.65;
+    gx.save(); gx.translate(76, 56); gx.rotate(clamp(trayAng, -0.8, 0.8));
+    gx.lineWidth = 2; gx.strokeStyle = '#15304a'; gx.lineJoin = 'round';
+    gx.fillStyle = '#c9d2da'; gx.beginPath(); gx.rect(-64, 26, 128, 7); gx.fill(); gx.stroke();
+    if (food.id === 'ramen') {
+      const bowl = () => { gx.beginPath(); gx.moveTo(-50, -20); gx.lineTo(50, -20); gx.lineTo(30, 26); gx.lineTo(-30, 26); gx.closePath(); };
+      gx.fillStyle = '#fff'; bowl(); gx.fill();
+      gx.save(); bowl(); gx.clip();
+      // soup surface: reaches the rim exactly when the balance limit is hit
+      const t = Math.tan(clamp(rel, -1, 1)), y0 = -20 + 50 * Math.tan(lim);
+      gx.fillStyle = danger ? '#e8743a' : '#d99a4e';
+      gx.beginPath(); gx.moveTo(-70, y0 - 70 * t); gx.lineTo(70, y0 + 70 * t); gx.lineTo(70, 40); gx.lineTo(-70, 40); gx.closePath(); gx.fill();
+      gx.strokeStyle = '#fff3c4'; gx.lineWidth = 2; gx.beginPath(); gx.moveTo(-70, y0 - 70 * t); gx.lineTo(70, y0 + 70 * t); gx.stroke();
+      gx.restore();
+      gx.strokeStyle = danger ? '#e8344a' : '#15304a'; gx.lineWidth = 3; bowl(); gx.stroke();
+      gx.fillStyle = '#e8344a'; gx.fillRect(-52, -24, 104, 5);
+    } else {
+      // plate with the food sliding toward the edge
+      const x = clamp(n, -1.5, 1.5) * 34;
+      gx.fillStyle = '#fff'; gx.beginPath(); gx.rect(-52, 18, 104, 8); gx.fill(); gx.stroke();
+      gx.strokeStyle = 'rgba(21,48,74,.25)'; gx.setLineDash([3, 3]); gx.beginPath(); gx.moveTo(0, 16); gx.lineTo(0, -24); gx.stroke(); gx.setLineDash([]);
+      gx.strokeStyle = danger ? '#e8344a' : '#15304a'; gx.lineWidth = 2;
+      if (food.id === 'sushi') {
+        const cols = ['#ff7b54', '#ffd23f', '#e8344a'];
+        for (let i = 0; i < 3; i++) if (foodLeft > i * 0.33) {
+          gx.fillStyle = '#faf7ef'; gx.beginPath(); gx.rect(x - 21 + i * 15, 6, 12, 12); gx.fill(); gx.stroke();
+          gx.fillStyle = cols[i]; gx.beginPath(); gx.rect(x - 22 + i * 15, 0, 14, 6); gx.fill(); gx.stroke();
+        }
+      } else {
+        gx.fillStyle = '#d9b27c'; gx.beginPath(); gx.rect(x - 24, 6, 48, 12); gx.fill(); gx.stroke();
+        if (foodLeft > 0.5) { gx.beginPath(); gx.rect(x - 24 + n * 4, -6, 48, 12); gx.fill(); gx.stroke(); }
+      }
+    }
+    gx.restore();
+    // level reference marks
+    gx.strokeStyle = 'rgba(21,48,74,.35)'; gx.lineWidth = 1.5; gx.beginPath(); gx.moveTo(4, 56); gx.lineTo(12, 56); gx.moveTo(140, 56); gx.lineTo(148, 56); gx.stroke();
+    $('gaugeWrap').classList.toggle('danger', danger);
+    $('gaugeTxt').textContent = danger ? 'こぼれてる！' : warn ? (rel > 0 ? '右へ傾けて →' : '← 左へ傾けて') : 'いいバランス';
+    $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
 
   // ---------- gameplay ----------
@@ -708,10 +789,11 @@ body {
       newLeg('pickup');
     }
   }
+  const limitNow = () => food.limit * (1 + (1 - foodLeft) * 0.8);   // less left in the bowl = harder to spill
   function pickup() {
     newLeg('deliver'); showFood(food.id, 1);
     sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
-    hint('ゆっくり曲がって、こぼさないように！');
+    hint('曲がる方向にトレーを傾けよう！');
   }
   function deliver() {
     const tip = Math.max(0, Math.round(320 - legTime * 22));
@@ -729,8 +811,8 @@ body {
     invuln = 1.6; shake = 0.6; speed *= 0.6;
     timeLeft -= 3; sfx.hit(); flash();
     pop('ドボン！ -3秒', '#ffd0dc');
-    spill(0.35, 'ぶつかった');
-    tiltV += rand(-6, 6);
+    spill(0.2, 'ぶつかった');
+    sloshV += (Math.random() < 0.5 ? -1 : 1) * rand(1.8, 2.6);
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
   function endGame() {
@@ -743,7 +825,8 @@ body {
     $('rClean').textContent = clean + ' 回';
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true; $('help').hidden = true;
-    keys.left = keys.right = false; endDrag();
+    keys.left = keys.right = false; endStick();
+    $('gaugeWrap').hidden = true; $('pad').hidden = true;
     setTimeout(() => $('retryBtn').focus(), 50);
   }
 
@@ -752,7 +835,7 @@ body {
     const playing = state === 'play';
 
     let input = 0;
-    if (playing) input = clamp((keys.right ? 1 : 0) - (keys.left ? 1 : 0) + drag.steer, -1, 1);
+    if (playing) input = clamp((keys.right ? 1 : 0) - (keys.left ? 1 : 0) + stick.x, -1, 1);
     else if (state === 'title') input = clamp(Math.sin(T * 0.7) * 1.4 - px * 0.25, -1, 1);
     vx += input * 40 * (jumpY > 0 ? 0.25 : 1) * dt;
     if (px < WALL_X && jumpY === 0) { // the wave face pulls you back down: hold left to climb
@@ -779,9 +862,9 @@ body {
         if (aerialT > 0) {
           const pts = Math.round(400 * (bigAmt > 0.5 ? 2 : 1));
           score += pts; pop(`エアリアル成功！ +${pts}`, '#ffd23f'); sfx.order(); aerialT = 0;
-          spill(0.3, 'エアリアルの着地');
-        } else spill(0.04 + airMax * 0.05, 'ジャンプの着地');
-        jumpY = 0; vy = 0; landJolt = 0.5; tiltV += rand(-4, 4);
+          sloshV += (Math.random() < 0.5 ? -1 : 1) * 2.6;   // a big slosh you can still catch
+        } else sloshV += (Math.random() < 0.5 ? -1 : 1) * (0.7 + airMax * 0.7);
+        jumpY = 0; vy = 0; landJolt = 0.5;
         for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3));
       }
     }
@@ -802,11 +885,17 @@ body {
     bigAmt += ((bigLeft > 0 ? 1 : 0) - bigAmt) * Math.min(1, dt * 1.2);
     dist += speed * dt;
 
-    // the tray tips with sharp turns and chop; tipping past a point spills
-    const chop = bigAmt * 0.6 + (px < WALL_X ? 0.35 : 0);
-    tiltV += (-clamp(ax, -120, 120) * 0.15 - tilt * 30 - tiltV * 6 + Math.sin(T * 8.3) * chop * 6) * dt;
-    tilt += tiltV * dt;
-    if (playing && jumpY === 0) spill(Math.max(0, Math.abs(tilt) - 0.12) * dt * 1.6, '急カーブ');
+    // BALANCE. The food leans the way physics pushes it (turning, wave slope, bumps);
+    // the right hand tilts the tray. If the two angles drift too far apart, it spills.
+    const chop = 0.012 + bigAmt * 0.05 + (px < WALL_X ? 0.03 : 0) + Math.abs(vx) * 0.002;
+    const want = clamp(ax, -90, 90) * 0.0055 + (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * chop;
+    sloshV += ((want - slosh) * 16 - sloshV * 3.4) * dt;   // slow, heavy slosh: readable and catchable
+    slosh = clamp(slosh + sloshV * dt, -0.9, 0.9);
+    trayA += (trayIn * 0.55 - trayA) * Math.min(1, dt * 14);
+    const roll = -Math.atan((waveH(px + 0.5, 0) - waveH(px - 0.5, 0))) * 0.4;   // the board's own lean (big on the wave face)
+    trayAng = roll + trayA;
+    rel = slosh - trayAng;
+    if (playing && phase === 'deliver') spill(Math.max(0, Math.abs(rel) - limitNow()) * dt * 1.8, 'バランスがくずれて');
 
     if (playing) {
       // the next shop / customer shows up a moment after the last one
@@ -832,7 +921,8 @@ body {
     rider.rotation.z = -Math.abs(vx) * 0.01;
     rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02;
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
-    tray.rotation.set(tilt * 0.8, 0, tilt * 1.6);
+    tray.rotation.set(0, 0, -trayA);
+    const soupM = foodMeshes.ramen.userData.level; soupM.rotation.z = clamp(-rel, -0.5, 0.5);
     shadow.position.set(px + 0.3, sy + 0.12, 0.3);
     shadow.rotation.set(-Math.PI / 2 - Math.atan(dhz) * 0.8, 0, 0);
     shadow.material.opacity = clamp(1 - jumpY * 0.3, 0.2, 1);
@@ -922,28 +1012,40 @@ body {
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
   });
-  addEventListener('blur', () => { keys.left = keys.right = false; endDrag(); });
+  addEventListener('blur', () => { keys.left = keys.right = false; endStick(); });
 
-  // one finger anywhere: slide sideways to steer, flick up to jump
-  const stageEl = $('stage'), ringEl = $('touchRing'), dotEl = $('touchDot');
-  function endDrag() { drag.id = null; drag.steer = 0; ringEl.hidden = dotEl.hidden = true; }
-  stageEl.addEventListener('pointerdown', e => {
-    if (state !== 'play' || drag.id !== null) return;
-    drag.id = e.pointerId; drag.x0 = e.clientX; drag.y0 = e.clientY; drag.steer = 0; drag.jumped = false;
-    try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
-    ringEl.style.left = dotEl.style.left = e.clientX + 'px'; ringEl.style.top = dotEl.style.top = e.clientY + 'px';
-    ringEl.hidden = dotEl.hidden = false; $('help').hidden = true;
+  // LEFT thumb: stick (slide sideways to steer, flick up to jump)
+  const stEl = $('stick'), knob = $('knob');
+  function moveStick(e) {
+    const r = stEl.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const m = Math.hypot(dx, dy), RAD = 46; if (m > RAD) { dx *= RAD / m; dy *= RAD / m; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    stick.x = Math.abs(dx) < 6 ? 0 : clamp(dx / 38, -1, 1);
+    if (dy < -28 && !stick.jumped) { stick.jumped = true; jump(); }
+    if (dy > -12) stick.jumped = false;
+  }
+  function endStick() { stick.id = null; stick.x = 0; stick.jumped = false; knob.style.transform = ''; }
+  stEl.addEventListener('pointerdown', e => { e.preventDefault(); stick.id = e.pointerId; try { stEl.setPointerCapture(e.pointerId); } catch (_) {} moveStick(e); });
+  stEl.addEventListener('pointermove', e => { if (e.pointerId === stick.id) moveStick(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stEl.addEventListener(t, e => { if (e.pointerId === stick.id) endStick(); }));
+
+  // RIGHT thumb: tilt pad (let go and the tray comes back level)
+  const tpEl = $('tiltPad'), tKnob = $('tiltKnob'); let tiltId = null;
+  function moveTilt(e) {
+    const r = tpEl.getBoundingClientRect();
+    const dx = clamp(e.clientX - (r.left + r.width / 2), -55, 55);
+    tKnob.style.transform = `translate(${dx}px, 0)`; trayIn = dx / 55;
+  }
+  const endTilt = e => { if (e.pointerId !== tiltId) return; tiltId = null; trayIn = 0; tKnob.style.transform = ''; };
+  tpEl.addEventListener('pointerdown', e => { e.preventDefault(); tiltId = e.pointerId; try { tpEl.setPointerCapture(e.pointerId); } catch (_) {} moveTilt(e); });
+  tpEl.addEventListener('pointermove', e => { if (e.pointerId === tiltId) moveTilt(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => tpEl.addEventListener(t, endTilt));
+  // on a computer the mouse does the right hand's job
+  addEventListener('mousemove', e => {
+    if (document.body.classList.contains('touch') || state !== 'play') return;
+    trayIn = clamp((e.clientX - innerWidth / 2) / (innerWidth * 0.2), -1, 1);
   });
-  stageEl.addEventListener('pointermove', e => {
-    if (e.pointerId !== drag.id) return;
-    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-    drag.steer = Math.abs(dx) < 8 ? 0 : clamp(dx / 55, -1, 1);
-    if (dy < -45 && !drag.jumped) { drag.jumped = true; jump(); }
-    if (drag.jumped && dy > -15) drag.jumped = false;
-    if (dy < -60) drag.y0 = e.clientY + 30; // keep the anchor near the finger so you can flick again
-    dotEl.style.left = (drag.x0 + clamp(dx, -55, 55)) + 'px'; dotEl.style.top = (drag.y0 + clamp(dy, -55, 55)) + 'px';
-  });
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stageEl.addEventListener(t, e => { if (e.pointerId === drag.id) endDrag(); }));
 
   function start() {
     try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
@@ -951,7 +1053,8 @@ body {
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
     $('hud').hidden = false; $('help').hidden = false;
-    $('help').textContent = document.body.classList.contains('touch') ? '指1本：左右にずらして移動・上にはじいてジャンプ' : '← → で移動 ・ ↑ か スペース でジャンプ';
+    $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D で移動 ・ W でジャンプ ・ マウス左右でトレーを傾ける';
+    $('pad').hidden = false; trayIn = 0;
     updateHUD();
     pop('出前スタート！', '#ffffff');
   }
