@@ -1,15 +1,15 @@
-<title>ネイルサーフ</title>
+<title>サーフ出前</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
 <style>
-/* Layout: full-screen 3D sea; left column = status + zoomed nail workbench; right = customer order; touch pads along the bottom. One sunny look, single theme. */
+/* Layout: full-screen 3D sea seen from behind the surfer; one slim HUD strip at the top; drag anywhere to steer. One sunny look, single theme. */
 :root {
   --ink: #15304a;
   --paper: #fffaf4;
   --coral: #ff4f8b;
   --sun: #ffc93c;
   --lagoon: #10a5c2;
-  --blush: #fde9e4;
+  --mint: #2fb57a;
   --line: rgba(21, 48, 74, .14);
   --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
@@ -24,136 +24,66 @@ body {
 }
 #stage { position: fixed; inset: 0; }
 #stage canvas { display: block; width: 100%; height: 100%; }
+.card { background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); }
 
-.card {
-  background: var(--paper); border: 2px solid var(--ink); border-radius: 14px;
-  box-shadow: 0 4px 0 var(--ink);
-}
 #hud {
-  position: fixed; left: 0; right: 0;
-  top: calc(8px + env(safe-area-inset-top, 0px));
+  position: fixed; left: 0; right: 0; top: calc(8px + env(safe-area-inset-top, 0px));
   padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
-  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+  display: flex; justify-content: center; align-items: stretch; gap: 8px; pointer-events: none;
 }
-#hudRow { display: flex; justify-content: center; align-items: flex-start; gap: 8px; }
-#wantBig {
-  display: flex; align-items: center; gap: 8px; padding: 5px 14px 5px 8px;
-  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
-  font-weight: 800; font-size: 13px; white-space: nowrap;
-}
-#wantBig.bump { animation: bump .5s ease-out; }
-@keyframes bump { 0% { transform: scale(1.35); } 60% { transform: scale(.95); } 100% { transform: scale(1); } }
-#wantBottle {
-  width: 18px; height: 22px; border-radius: 5px 5px 7px 7px; border: 2px solid var(--ink); position: relative; margin-top: 10px; flex: none;
-}
-#wantBottle::before { content: ""; position: absolute; left: 3px; right: 3px; top: -12px; height: 10px; background: var(--ink); border-radius: 3px; }
-#wantBottle::after { content: ""; position: absolute; left: 3px; top: 3px; width: 4px; height: 8px; border-radius: 3px; background: rgba(255,255,255,.7); }
-#wantName {
-  font-family: var(--display); font-weight: 400; font-size: 20px; padding: 1px 14px; border-radius: 999px;
-  color: #fff; border: 2px solid var(--ink); -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill;
-}
-#wantState { font-size: 12px; }
-#wantState.ok { color: #1f9a63; }
-#wantState.ng { color: #d62a48; }
-#status { width: 132px; padding: 8px 10px; display: grid; gap: 4px; font-size: 12px; box-sizing: border-box; }
+#status { width: 124px; padding: 8px 10px; display: grid; gap: 3px; box-sizing: border-box; }
 #status .row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.lbl { font-weight: 800; letter-spacing: .04em; opacity: .7; font-size: 10px; }
 #score { font-family: var(--display); font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
 #time { font-family: var(--display); font-size: 16px; font-variant-numeric: tabular-nums; }
 #time.low { color: var(--coral); }
-.lbl { font-weight: 800; letter-spacing: .04em; opacity: .7; font-size: 10px; }
-#brushRow { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; }
-#swatch {
-  width: 12px; height: 16px; border-radius: 3px 3px 5px 5px; border: 2px solid var(--ink); flex: none;
-  background: repeating-linear-gradient(45deg, #fff 0 3px, #dde 3px 6px); position: relative; margin-top: 6px;
-}
-#swatch::before { content: ""; position: absolute; left: 2px; right: 2px; top: -7px; height: 6px; background: var(--ink); border-radius: 2px; }
-.bar { height: 7px; border-radius: 6px; background: #e7eef3; border: 1.5px solid var(--ink); overflow: hidden; }
-.bar > i { display: block; height: 100%; width: 0; background: #35c08a; }
 #combo { font-weight: 800; color: var(--coral); font-size: 11px; min-height: 1em; }
 
-#nailCard { width: 120px; box-sizing: border-box; padding: 7px 8px 8px; text-align: center; transition: border-color .15s, box-shadow .15s; }
-#nailCard.warn { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a; animation: wiggle .25s; }
-@keyframes wiggle { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-#nailCard .bar { margin-top: 4px; }
-#nailCard .lbl { margin-top: 5px; display: block; }
-#nailCard .ttl { font-family: var(--display); font-size: 12px; }
-#nailHead { font-size: 14px !important; margin-top: 2px; }
-#zure {
-  position: fixed; left: 50%; bottom: 44%; transform: translateX(-50%); pointer-events: none;
-  font-family: var(--display); font-size: clamp(22px, 5vw, 34px); color: #ff3b5c; white-space: nowrap;
-  -webkit-text-stroke: 2px #fff; paint-order: stroke fill; text-shadow: 0 3px 0 rgba(21,48,74,.5);
+#task { width: 210px; padding: 8px 12px; display: grid; gap: 5px; box-sizing: border-box; }
+#taskHead { display: flex; align-items: center; gap: 8px; }
+#taskTag {
+  font-size: 11px; font-weight: 800; color: #fff; padding: 2px 8px; border-radius: 999px; border: 1.5px solid var(--ink); white-space: nowrap;
 }
-#nailHead { font-weight: 800; font-size: 11px; white-space: nowrap; }
-#nailView { width: 104px; height: 130px; display: block; margin: 3px auto 0; border-radius: 8px; }
-
-#order { width: 150px; padding: 6px 6px 8px; text-align: center; box-sizing: border-box; }
-#order .ttl { font-family: var(--display); font-size: 12px; letter-spacing: .05em; }
-#hand { width: 136px; height: 106px; display: block; margin: 0 auto; }
+#taskTag.shop { background: #ff9d00; }
+#taskTag.cust { background: var(--mint); }
+#taskName { font-family: var(--display); font-size: 16px; line-height: 1.15; }
+#taskWhere { display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
+#dir { font-family: var(--display); font-size: 16px; color: var(--coral); }
+#foodRow[hidden] + .x {}
+.bar { height: 10px; border-radius: 6px; background: #e7eef3; border: 1.5px solid var(--ink); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 100%; background: var(--mint); transition: background .2s; }
+#foodBar.hit { animation: shakebar .3s; }
+@keyframes shakebar { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
 #pop {
-  position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  position: fixed; left: 50%; top: 34%; transform: translate(-50%, -50%);
   font-family: var(--display); font-size: clamp(20px, 5.4vw, 38px); color: #fff;
-  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
-  text-shadow: 0 4px 0 var(--ink); pointer-events: none; white-space: nowrap;
-  opacity: 0; transition: opacity .2s, transform .2s;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
+  pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity .2s, transform .2s;
 }
 #pop.show { opacity: 1; transform: translate(-50%, -60%); }
 #hint {
-  position: fixed; left: 50%; top: calc(215px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(150px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
   background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
 }
 #hint.show { opacity: .92; }
 #big {
-  position: fixed; left: 0; right: 0; top: calc(235px + env(safe-area-inset-top, 0px)); text-align: center; pointer-events: none;
+  position: fixed; left: 0; right: 0; top: calc(195px + env(safe-area-inset-top, 0px)); text-align: center; pointer-events: none;
   font-family: var(--display); font-size: clamp(18px, 4.6vw, 32px); color: var(--sun);
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
 #big small { font-size: .55em; color: #fff; }
-#doneBtn {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  font-family: var(--display); font-size: 20px; color: #fff; background: #b9c3cc; border: 2px solid var(--ink);
-  border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; touch-action: none;
-}
-#doneBtn.ready { background: #2fb57a; }
-body.touch #doneBtn { left: auto; right: max(16px, env(safe-area-inset-right, 0px)); transform: none; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding: 16px 22px; }
-body.touch #doneBtn:active { transform: translateY(3px); }
-#danger { position: fixed; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 8px rgba(232, 52, 74, .75), inset 0 0 60px rgba(232, 52, 74, .5); }
-#danger b {
-  position: absolute; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  font-family: var(--display); font-weight: 400; font-size: clamp(20px, 5vw, 30px); color: #ff3b5c; white-space: nowrap;
-  -webkit-text-stroke: 2px #fff; paint-order: stroke fill; animation: blink .4s infinite alternate;
-}
-@keyframes blink { from { opacity: 1; } to { opacity: .45; } }
-#doneBtn:active { transform: translate(-50%, 3px); box-shadow: 0 1px 0 var(--ink); }
-#help {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  font-size: 12px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: none; white-space: nowrap;
-}
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
+#help {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: none; white-space: nowrap;
+}
+/* where your finger went down, and where it is now */
+#touchRing, #touchDot { position: fixed; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%); }
+#touchRing { width: 96px; height: 96px; border: 2px solid rgba(255,255,255,.7); background: rgba(255,255,255,.12); }
+#touchDot { width: 40px; height: 40px; background: rgba(255,250,244,.9); border: 2px solid var(--ink); }
 
-/* touch controls */
-#pad { display: none; }
-body.touch #pad {
-  display: flex; justify-content: space-between; align-items: flex-end;
-  position: fixed; left: 0; right: 0; bottom: 0;
-  padding: 0 max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
-  pointer-events: none;
-}
-#stick {
-  position: relative; width: 132px; height: 132px; border-radius: 50%; pointer-events: auto; touch-action: none;
-  background: rgba(255, 250, 244, .28); border: 2px solid rgba(21, 48, 74, .55); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
-}
-#knob {
-  position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
-  background: rgba(255, 250, 244, .95); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
-}
-#stick .lab { position: absolute; font-weight: 800; font-size: 12px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); pointer-events: none; }
-#stick .l { left: 8px; top: 50%; transform: translateY(-50%); }
-#stick .r { right: 8px; top: 50%; transform: translateY(-50%); }
-#stick .u { left: 50%; top: 6px; transform: translateX(-50%); font-size: 11px; }
-
-/* overlays */
 .overlay {
   position: fixed; inset: 0; display: grid; place-items: center;
   padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
@@ -161,20 +91,19 @@ body.touch #pad {
 }
 .panel { width: min(460px, 100%); padding: 20px 22px 18px; display: grid; gap: 12px; text-align: center; max-height: 100%; overflow: auto; box-sizing: border-box; }
 .logo {
-  font-family: var(--display); font-size: clamp(38px, 11vw, 58px); line-height: 1; color: var(--coral);
-  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink);
-  letter-spacing: .02em; text-wrap: balance;
+  font-family: var(--display); font-size: clamp(40px, 12vw, 62px); line-height: 1; color: #ff9d00;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); text-wrap: balance;
 }
 .lead { font-size: 15px; font-weight: 800; margin: 0; text-wrap: balance; }
-.how { text-align: left; display: grid; gap: 7px; font-size: 13px; margin: 0; padding: 12px 14px; background: #eef8fb; border-radius: 10px; border: 1.5px solid var(--line); }
+.how { text-align: left; display: grid; gap: 7px; font-size: 13.5px; margin: 0; padding: 12px 14px; background: #eef8fb; border-radius: 10px; border: 1.5px solid var(--line); }
 .how div { display: flex; gap: 10px; align-items: baseline; }
 .how kbd {
-  font-family: var(--body); font-weight: 800; font-size: 12px; min-width: 64px; text-align: center; flex: none;
+  font-family: var(--body); font-weight: 800; font-size: 12px; min-width: 28px; text-align: center; flex: none;
   background: #fff; border: 1.5px solid var(--ink); border-radius: 6px; padding: 1px 6px; box-shadow: 0 2px 0 var(--ink);
 }
-.tips { text-align: left; font-size: 12.5px; margin: 0; padding: 10px 14px 10px 30px; background: var(--blush); border-radius: 10px; display: grid; gap: 4px; }
+.small { font-size: 12.5px; font-weight: 500; margin: 0; }
 .btn {
-  font-family: var(--display); font-size: 22px; color: #fff; background: var(--coral);
+  font-family: var(--display); font-size: 22px; color: #fff; background: #ff9d00;
   border: 2px solid var(--ink); border-radius: 999px; padding: 12px 18px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
 }
 .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
@@ -183,13 +112,11 @@ body.touch #pad {
 .res { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; text-align: left; font-size: 15px; font-weight: 800; padding: 12px 16px; background: #eef8fb; border-radius: 10px; }
 .res span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) {
-  #hud { gap: 5px; }
-  #status { width: 112px; padding: 6px 8px; }
+  #hud { gap: 6px; }
+  #status { width: 108px; padding: 6px 8px; }
   #score { font-size: 18px; }
-  #nailView { width: 76px; height: 95px; }
-  #wantName { font-size: 17px; }
-  #order { width: 128px; }
-  #hand { width: 116px; height: 90px; }
+  #task { width: 190px; padding: 6px 10px; }
+  #taskName { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { #pop, #flash { transition: none; } }
 </style>
@@ -197,47 +124,36 @@ body.touch #pad {
 <div id="stage"></div>
 
 <div id="hud" hidden>
-  <div id="hudRow">
-    <div id="status" class="card">
-      <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
-      <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
-      <div class="lbl">いまのハケ</div>
-      <div id="brushRow"><span id="swatch"></span><span id="brushName">なし</span></div>
-      <div id="combo"></div>
-    </div>
-    <div id="nailCard" class="card">
-      <div class="ttl">ご注文 No.<span id="orderNo">1</span></div>
-      <div id="nailHead"><span id="fingerName">親指</span></div>
-      <span class="lbl">手の安定</span>
-      <div class="bar" id="wobBar"><i></i></div>
-    </div>
+  <div id="status" class="card">
+    <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
+    <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
+    <div id="combo"></div>
   </div>
-  <div id="wantBig"><span id="wantBottle"></span><span>ほしい色</span><b id="wantName">ピンク</b><span id="wantState">をひろってね</span></div>
+  <div id="task" class="card">
+    <div id="taskHead"><span id="taskTag" class="shop">受け取り</span><span id="taskName">ラーメン屋へ</span></div>
+    <div id="taskWhere"><span id="taskDist">あと 120m</span><span id="dir"></span></div>
+    <div id="foodRow" hidden><div class="row" style="display:flex;justify-content:space-between"><span class="lbl">料理ののこり</span><span class="lbl" id="foodPct">100%</span></div><div class="bar" id="foodBar"><i></i></div></div>
+  </div>
 </div>
 
 <div id="big" hidden>ビッグウェーブ！ スコア2倍<br><small>← 左の波のカベを登って、てっぺんでエアリアル！</small></div>
 <div id="pop"></div>
-<div id="zure" hidden>ズレてる！</div>
 <div id="hint"></div>
 <div id="flash"></div>
-<div id="danger" hidden><b>⚠ 前から来る！</b></div>
-<button id="doneBtn" hidden>できた！</button>
-<div id="help" hidden>画面をドラッグしてハケを動かそう</div>
-
-<div id="pad">
-  <div id="stick" aria-label="移動とジャンプ"><div id="knob"></div><span class="lab l">◀</span><span class="lab r">▶</span><span class="lab u">ジャンプ</span></div>
-</div>
+<div id="help" hidden></div>
+<div id="touchRing" hidden></div><div id="touchDot" hidden></div>
 
 <div id="title" class="overlay">
   <div class="panel card">
-    <div class="logo">ネイルサーフ</div>
-    <p class="lead">波に乗りながら、お客さんのネイルを仕上げよう</p>
+    <div class="logo">サーフ出前</div>
+    <p class="lead">波に乗って、海の上のお客さんに料理を届けよう</p>
     <div class="how">
-      <div><kbd>1</kbd><span>上の<b>ご注文と同じ色のボトル</b>をひろう</span></div>
-      <div><kbd>2</kbd><span><b>画面をドラッグ</b>して、ハケを動かして自分でぬる</span></div>
-      <div><kbd>3</kbd><span>ぬる間はツメにズーム。<b>曲がったり波でゆれると手がブレる</b>ので、タイミングを見てぬろう</span></div>
+      <div><kbd>1</kbd><span><b>オレンジの光</b>のお店を通って、料理を受け取る</span></div>
+      <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
+      <div><kbd>3</kbd><span><b>急に曲がる・ジャンプ・ぶつかる</b>と料理がこぼれる</span></div>
     </div>
-    <p class="lead" style="font-size:13px;font-weight:500">岩・ブイ・サメはよけるかジャンプ。ぶつかると3秒へります。<br>左の大波のカベは ← で登れる。てっぺんまで行くとエアリアル！<br>スマホ：左手のスティックで移動、上にはじいてジャンプ。右手でドラッグしてぬる<br>パソコン：← → 移動 ／ ↑ ジャンプ ／ マウスでドラッグ ぬる ／ Enter できた</p>
+    <p class="small">はやく、こぼさず届けるほどチップが増えるよ。届けるたびに +6秒。<br>左の大波のカベを登って、てっぺんまで行くとエアリアル！（料理を持っているとこぼれる）</p>
+    <p class="small"><b>スマホ</b>：指1本で、左右にずらして移動・上にはじいてジャンプ<br><b>パソコン</b>：← → 移動 ／ ↑ または スペース でジャンプ</p>
     <button class="btn" id="startBtn">スタート</button>
   </div>
 </div>
@@ -248,8 +164,8 @@ body.touch #pad {
     <div id="rank">A</div>
     <div class="res">
       <span>スコア</span><span id="rScore">0</span>
-      <span>パーフェクト</span><span id="rPerfect">0</span>
-      <span>仕上げたお客さん</span><span id="rOrders">0</span>
+      <span>届けた数</span><span id="rDone">0</span>
+      <span>こぼさず完璧</span><span id="rClean">0</span>
       <span>ベストスコア</span><span id="rBest">0</span>
     </div>
     <button class="btn" id="retryBtn">もう一回</button>
@@ -264,100 +180,18 @@ body.touch #pad {
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
 
-  const COLORS = [
-    { name: 'ピンク', hex: '#ff5fa2' },
-    { name: 'あか', hex: '#e8344a' },
-    { name: 'みずいろ', hex: '#39c6f0' },
-    { name: 'きいろ', hex: '#ffd23f' },
-    { name: 'ミント', hex: '#3fe0a8' },
-    { name: 'むらさき', hex: '#a46bff' },
-  ];
-  const RGB = COLORS.map(c => [1, 3, 5].map(i => parseInt(c.hex.slice(i, i + 2), 16)));
-  const FINGER_NAMES = ['親指', '人さし指', '中指', 'くすり指', '小指'];
   const GAME_TIME = 90;
   const LANE = 7.5;
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
+  // fragile = how easily it spills
+  const FOODS = [
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.35, base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 1.0, base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, base: 280, color: 0xff9d00 },
+  ];
+  const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
   if ('ontouchstart' in window || matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
-
-  // =====================================================================
-  // Nail workbench: a 160x200 pixel model of one fingernail.
-  // Paint is real pixels, so coverage, streaks and spill are measured, not faked.
-  // =====================================================================
-  const NW = 160, NH = 200;
-  function nailPath(c) {
-    c.beginPath();
-    c.moveTo(50, 140); c.lineTo(50, 70);
-    c.arc(80, 70, 30, Math.PI, 0);
-    c.lineTo(110, 140);
-    c.quadraticCurveTo(80, 158, 50, 140);
-    c.closePath();
-  }
-  const mask = new Uint8Array(NW * NH);
-  let maskCount = 0;
-  const BANDS = [[66, 94], [50, 72], [88, 110]]; // x ranges for center/left/right
-  const bandCount = [0, 0, 0];
-  (() => {
-    const m = document.createElement('canvas'); m.width = NW; m.height = NH;
-    const c = m.getContext('2d'); c.fillStyle = '#000'; nailPath(c); c.fill();
-    const d = c.getImageData(0, 0, NW, NH).data;
-    for (let i = 0; i < NW * NH; i++) if (d[i * 4 + 3] > 128) {
-      mask[i] = 1; maskCount++;
-      const x = i % NW; BANDS.forEach(([a, b], k) => { if (x >= a && x < b) bandCount[k]++; });
-    }
-  })();
-  // stroke lanes: x, start y (cuticle), end y (tip)
-  const LANES = [
-    { x: 80, y0: 146, y1: 45, name: '真ん中' },
-    { x: 65, y0: 141, y1: 60, name: '左' },
-    { x: 95, y0: 141, y1: 60, name: '右' },
-  ];
-  const BRUSH_W = 28, BRUSH_H = 8;
-
-  function evalNail(n) {
-    const d = n.ctx.getImageData(0, 0, NW, NH).data;
-    const [tr, tg, tb] = RGB[n.target];
-    let good = 0, any = 0, spill = 0;
-    const bandGood = [0, 0, 0];
-    for (let i = 0; i < NW * NH; i++) {
-      const a = d[i * 4 + 3];
-      if (mask[i]) {
-        if (a > 40) any++;
-        if (a > 170) {
-          const dr = d[i * 4] - tr, dg = d[i * 4 + 1] - tg, db = d[i * 4 + 2] - tb;
-          if (dr * dr + dg * dg + db * db < 3600) {
-            good++;
-            const x = i % NW; BANDS.forEach(([lo, hi], k) => { if (x >= lo && x < hi) bandGood[k]++; });
-          }
-        }
-      } else if (a > 60) spill++;
-    }
-    n.cov = good / maskCount;
-    n.wrong = Math.max(0, any - good) / maskCount;
-    n.spill = spill / maskCount;
-    n.bandCov = bandGood.map((g, k) => g / bandCount[k]);
-  }
-
-  function makeNail(target) {
-    const cv = document.createElement('canvas'); cv.width = NW; cv.height = NH;
-    return { target, cv, ctx: cv.getContext('2d', { willReadFrequently: true }), strokes: 0, sp: 0, lane: 0, cov: 0, spill: 0, wrong: 0, bandCov: [0, 0, 0],
-      done: false, result: null, wet: 0, smudged: false, glitter: false, used: null, evalT: 0 };
-  }
-
-  function dab(n, x, y, w, ci, alpha) {
-    const c = n.ctx;
-    c.globalAlpha = alpha; c.fillStyle = COLORS[ci].hex;
-    rr(c, x - w / 2, y - BRUSH_H / 2, w, BRUSH_H, BRUSH_H / 2); c.fill();
-    c.globalAlpha = 1;
-  }
-  function smear(n, ci) {
-    const c = n.ctx;
-    c.save(); c.globalAlpha = 0.85; c.strokeStyle = COLORS[ci].hex; c.lineCap = 'round';
-    c.lineWidth = rand(8, 13);
-    const sx = rand(60, 100), sy = rand(70, 120), dir = Math.random() < 0.5 ? -1 : 1;
-    c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + dir * 25, sy + rand(-20, 20), sx + dir * rand(45, 60), sy + rand(10, 40)); c.stroke();
-    c.restore();
-  }
 
   // ---------- three.js scene ----------
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -366,7 +200,7 @@ body.touch #pad {
   $('stage').appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 500);
+  const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 500);
 
   function radialTex(inner, outer, size = 64) {
     const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
@@ -564,15 +398,6 @@ body.touch #pad {
     rider.add(pivot); return { pivot, hand };
   }
   const armL = makeArm(-0.22), armR = makeArm(0.22);
-  const nail3D = [];
-  for (let i = 0; i < 5; i++) {
-    const n = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.03), mat(0xf3d9cf, { roughness: 0.2 }));
-    n.position.set(0.08, 0.03, -0.06 + i * 0.03); armL.hand.add(n); nail3D.push(n);
-  }
-  const brushTipMat = mat(0xdddddd, { roughness: 0.3 });
-  const brushStick = limb(0.02, 0.02, 0.32, mat(0x15304a)); brushStick.rotation.z = Math.PI / 2; brushStick.position.x = 0.14; armR.hand.add(brushStick);
-  const brushTip = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.1, 8), brushTipMat); brushTip.rotation.z = -Math.PI / 2; brushTip.position.x = 0.34; armR.hand.add(brushTip);
-
   // spray particles
   const PN = 600;
   const pGeo = new THREE.BufferGeometry();
@@ -584,269 +409,6 @@ body.touch #pad {
   function emit(x, y, z, vx, vy, vz, life) {
     const p = parts[pIdx]; pIdx = (pIdx + 1) % PN;
     Object.assign(p, { life: life || rand(0.4, 0.9), x, y, z, vx, vy, vz });
-  }
-
-  // =====================================================================
-  // First-person view: a 3D hand floats in front of the camera and the
-  // polish is painted straight onto its fingernails (canvas textures).
-  // =====================================================================
-  scene.add(camera);
-  const fpv = new THREE.Group(); camera.add(fpv);
-  const handG = new THREE.Group(); fpv.add(handG);
-  handG.rotation.x = 1.22;
-  handG.scale.setScalar(1.4);
-
-  // ---- realistic hand: one smooth surface built from a distance field ----
-  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
-  function sdRoundCone(px, py, pz, a, b, r1, r2) {
-    const bax = b.x - a.x, bay = b.y - a.y, baz = b.z - a.z;
-    const l2 = bax * bax + bay * bay + baz * baz, rr = r1 - r2, a2 = l2 - rr * rr, il2 = 1 / l2;
-    const pax = px - a.x, pay = py - a.y, paz = pz - a.z;
-    const y = pax * bax + pay * bay + paz * baz, z = y - l2;
-    const xx = pax * l2 - bax * y, xy = pay * l2 - bay * y, xz = paz * l2 - baz * y;
-    const x2 = xx * xx + xy * xy + xz * xz, y2 = y * y * l2, z2 = z * z * l2;
-    const k = Math.sign(rr) * rr * rr * x2;
-    if (Math.sign(z) * a2 * z2 > k) return Math.sqrt(x2 + z2) * il2 - r2;
-    if (Math.sign(y) * a2 * y2 < k) return Math.sqrt(x2 + y2) * il2 - r1;
-    return (Math.sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
-  }
-  function sdRoundBox(px, py, pz, c, b, r) {
-    const qx = Math.abs(px - c.x) - b.x + r, qy = Math.abs(py - c.y) - b.y + r, qz = Math.abs(pz - c.z) - b.z + r;
-    const mx = Math.max(qx, 0), my = Math.max(qy, 0), mz = Math.max(qz, 0);
-    return Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, Math.max(qy, qz)), 0) - r;
-  }
-  function sdSphere(px, py, pz, c, r) { const dx = px - c.x, dy = py - c.y, dz = pz - c.z; return Math.sqrt(dx * dx + dy * dy + dz * dz) - r; }
-  function smin(a, b, k) { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; }
-
-  // finger skeletons: knuckle (MCP) position, fan angle, curl per joint, bone lengths, radii at each joint
-  const FDEF = [ // thumb, index, middle, ring, pinky  (left hand, palm down, thumb on the right)
-    { base: V3(0.05, -0.016, 0.145), fan: 0.62, curl: [0.12, 0.1, 0.12], len: [0.072, 0.05, 0.04], rad: [0.026, 0.022, 0.0195, 0.0172], roll: 0.55 },
-    { base: V3(0.056, 0.0, 0.006), fan: 0.1, curl: [0.03, 0.09, 0.08], len: [0.082, 0.047, 0.036], rad: [0.0195, 0.0168, 0.0152, 0.0138], roll: 0 },
-    { base: V3(0.016, 0.002, -0.004), fan: 0.02, curl: [0.03, 0.1, 0.08], len: [0.09, 0.055, 0.038], rad: [0.0198, 0.0172, 0.0155, 0.014], roll: 0 },
-    { base: V3(-0.024, 0.0, 0.002), fan: -0.07, curl: [0.04, 0.1, 0.08], len: [0.084, 0.051, 0.036], rad: [0.0186, 0.0162, 0.0146, 0.0133], roll: 0 },
-    { base: V3(-0.06, -0.004, 0.018), fan: -0.18, curl: [0.05, 0.1, 0.08], len: [0.066, 0.037, 0.03], rad: [0.0165, 0.0142, 0.0128, 0.0118], roll: 0 },
-  ];
-  FDEF.forEach(f => {
-    f.j = [f.base.clone()]; let pitch = 0;
-    for (let s = 0; s < 3; s++) {
-      pitch += f.curl[s];
-      const dir = V3(Math.sin(f.fan) * Math.cos(pitch), -Math.sin(pitch), -Math.cos(f.fan) * Math.cos(pitch));
-      f.j.push(f.j[s].clone().addScaledVector(dir, f.len[s]));
-    }
-  });
-  const META = FDEF.slice(1).map(f => [V3(f.base.x * 0.55, -0.004, 0.17), f.base, f.rad[0] * 0.92]);
-  const PALM_C = V3(0.0, -0.006, 0.095), PALM_B = V3(0.068, 0.014, 0.092);
-  const THENAR = V3(0.058, -0.022, 0.12);
-  const WA = V3(0, -0.006, 0.2), WB = V3(0, -0.006, 0.36);
-
-  function handSDF(x, y, z) {
-    let palm = sdRoundBox(x, y, z, PALM_C, PALM_B, 0.016);
-    for (const [a, b, r] of META) palm = smin(palm, sdRoundCone(x, y, z, a, b, r * 0.85, r), 0.02);
-    palm = smin(palm, sdSphere(x, y, z, THENAR, 0.03), 0.03);
-    palm = smin(palm, sdRoundCone(x, y * 1.45, z, WA, WB, 0.047, 0.05) / 1.45, 0.04);
-    let best = 1e9;
-    for (const f of FDEF) {
-      let d = sdRoundCone(x, y, z, f.j[0], f.j[1], f.rad[0], f.rad[1]);
-      d = smin(d, sdRoundCone(x, y, z, f.j[1], f.j[2], f.rad[1], f.rad[2]), 0.004);
-      d = smin(d, sdRoundCone(x, y, z, f.j[2], f.j[3], f.rad[2], f.rad[3]), 0.004);
-      best = Math.min(best, smin(palm, d, 0.014));
-    }
-    return best;
-  }
-  function sdfNormal(x, y, z, out) {
-    const e = 0.0007;
-    out.set(handSDF(x + e, y, z) - handSDF(x - e, y, z), handSDF(x, y + e, z) - handSDF(x, y - e, z), handSDF(x, y, z + e) - handSDF(x, y, z - e)).normalize();
-    return out;
-  }
-  // naive surface nets: one vertex per surface cell, one quad per crossing edge
-  function buildHandGeometry() {
-    const h = 0.0034, min = V3(-0.13, -0.08, -0.215), max = V3(0.18, 0.045, 0.33);
-    const nx = Math.ceil((max.x - min.x) / h) + 1, ny = Math.ceil((max.y - min.y) / h) + 1, nz = Math.ceil((max.z - min.z) / h) + 1;
-    const F = new Float32Array(nx * ny * nz);
-    const id = (i, j, k) => i + nx * (j + ny * k);
-    for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) F[id(i, j, k)] = handSDF(min.x + i * h, min.y + j * h, min.z + k * h);
-    const cid = (i, j, k) => i + (nx - 1) * (j + (ny - 1) * k);
-    const cellV = new Int32Array((nx - 1) * (ny - 1) * (nz - 1)).fill(-1);
-    const pos = [];
-    const cv = new Float32Array(8);
-    for (let k = 0; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
-      let mask = 0;
-      for (let c = 0; c < 8; c++) { const v = F[id(i + (c & 1), j + ((c >> 1) & 1), k + ((c >> 2) & 1))]; cv[c] = v; if (v < 0) mask |= 1 << c; }
-      if (mask === 0 || mask === 255) continue;
-      let sx = 0, sy = 0, sz = 0, cnt = 0;
-      for (let c = 0; c < 8; c++) for (const bit of [1, 2, 4]) {
-        if (c & bit) continue; const c2 = c | bit;
-        const a = cv[c], b = cv[c2]; if ((a < 0) === (b < 0)) continue;
-        const t = a / (a - b);
-        sx += (c & 1) + (bit === 1 ? t : 0); sy += ((c >> 1) & 1) + (bit === 2 ? t : 0); sz += ((c >> 2) & 1) + (bit === 4 ? t : 0); cnt++;
-      }
-      cellV[cid(i, j, k)] = pos.length / 3;
-      pos.push(min.x + (i + sx / cnt) * h, min.y + (j + sy / cnt) * h, min.z + (k + sz / cnt) * h);
-    }
-    const idx = [];
-    const quad = (a, b, c, d) => { if (a < 0 || b < 0 || c < 0 || d < 0) return; idx.push(a, b, c, a, c, d); };
-    for (let k = 1; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++)
-      if ((F[id(i, j, k)] < 0) !== (F[id(i + 1, j, k)] < 0)) quad(cellV[cid(i, j - 1, k - 1)], cellV[cid(i, j, k - 1)], cellV[cid(i, j, k)], cellV[cid(i, j - 1, k)]);
-    for (let k = 1; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++)
-      if ((F[id(i, j, k)] < 0) !== (F[id(i, j + 1, k)] < 0)) quad(cellV[cid(i - 1, j, k - 1)], cellV[cid(i, j, k - 1)], cellV[cid(i, j, k)], cellV[cid(i - 1, j, k)]);
-    for (let k = 0; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++)
-      if ((F[id(i, j, k)] < 0) !== (F[id(i, j, k + 1)] < 0)) quad(cellV[cid(i - 1, j - 1, k)], cellV[cid(i, j - 1, k)], cellV[cid(i, j, k)], cellV[cid(i - 1, j, k)]);
-    // snap vertices onto the true surface, then normals + skin colour from the field
-    const n = new THREE.Vector3(), nrm = new Float32Array(pos.length), col = new Float32Array(pos.length);
-    const tips = FDEF.map(f => f.j[3]), knuck = FDEF.flatMap(f => [f.j[1], f.j[2]]);
-    for (let v = 0; v < pos.length; v += 3) {
-      let x = pos[v], y = pos[v + 1], z = pos[v + 2];
-      for (let it = 0; it < 2; it++) { const d = handSDF(x, y, z); sdfNormal(x, y, z, n); x -= n.x * d; y -= n.y * d; z -= n.z * d; }
-      pos[v] = x; pos[v + 1] = y; pos[v + 2] = z;
-      sdfNormal(x, y, z, n); nrm[v] = n.x; nrm[v + 1] = n.y; nrm[v + 2] = n.z;
-      let r = 0.88, g = 0.6, b = 0.47;
-      let tip = 0; tips.forEach(t => { tip = Math.max(tip, 1 - t.distanceTo(V3(x, y, z)) / 0.022); });
-      let kn = 0; knuck.forEach(t => { kn = Math.max(kn, 1 - t.distanceTo(V3(x, y, z)) / 0.02); });
-      tip = Math.max(0, tip); kn = Math.max(0, kn) * Math.max(0, n.y);
-      r += tip * -0.02; g -= tip * 0.1; b -= tip * 0.06;
-      g -= kn * 0.07; b -= kn * 0.05;
-      if (n.y < -0.3) { r += 0.02; g += 0.03; b += 0.03; }        // lighter palm side
-      const ao = clamp(handSDF(x + n.x * 0.012, y + n.y * 0.012, z + n.z * 0.012) / 0.012, 0, 1);
-      const shade = 0.62 + 0.38 * ao;
-      col[v] = r * shade; col[v + 1] = g * shade; col[v + 2] = b * shade;
-    }
-    // make every triangle face outwards
-    for (let t = 0; t < idx.length; t += 3) {
-      const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3;
-      const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2];
-      const wx = pos[c] - pos[a], wy = pos[c + 1] - pos[a + 1], wz = pos[c + 2] - pos[a + 2];
-      const cx = uy * wz - uz * wy, cy = uz * wx - ux * wz, cz = ux * wy - uy * wx;
-      if (cx * nrm[a] + cy * nrm[a + 1] + cz * nrm[a + 2] < 0) { const tmp = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = tmp; }
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setIndex(idx);
-    return geo;
-  }
-  const handMesh = new THREE.Mesh(buildHandGeometry(), new THREE.MeshStandardMaterial({
-    vertexColors: true, roughness: 0.52, metalness: 0, emissive: 0x5a1e0e, emissiveIntensity: 0.2,
-  }));
-  handG.add(handMesh);
-  const bracelet = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.0045, 10, 48), mat(0xffd23f, { metalness: 0.7, roughness: 0.22 }));
-  bracelet.scale.set(1, 0.72, 1); bracelet.position.set(0, -0.006, 0.27); handG.add(bracelet);
-
-  // nail frame on the last bone of each finger
-  const disp = [];
-  function nailFrame(f) {
-    const a = f.j[2], b = f.j[3], u = b.clone().sub(a); const len = u.length(); u.normalize();
-    const lat = V3(-u.z, 0, u.x).normalize();
-    let up = new THREE.Vector3().crossVectors(lat, u).normalize();
-    if (f.roll) { const c = Math.cos(f.roll), s = Math.sin(f.roll); const up2 = up.clone().multiplyScalar(c).addScaledVector(lat, -s); lat.multiplyScalar(c).addScaledVector(up, s); up = up2; }
-    return { a, b, u, lat, up, len, r2: f.rad[2], r3: f.rad[3] };
-  }
-  function nailSurface(fr, k, cx, cy, lift) {
-    const along = (cy - 40) * k - fr.r3 * 0.55;           // distance back from the fingertip joint
-    let rad;
-    if (along < 0) rad = Math.sqrt(Math.max(fr.r3 * fr.r3 - along * along, fr.r3 * fr.r3 * 0.05));
-    else rad = lerp(fr.r3, fr.r2, clamp(along / fr.len, 0, 1));
-    const ang = (cx - 80) * k / rad;
-    const c = fr.b.clone().addScaledVector(fr.u, -along);
-    return c.addScaledVector(fr.up, Math.cos(ang) * (rad + lift)).addScaledVector(fr.lat, Math.sin(ang) * (rad + lift));
-  }
-  FDEF.forEach((f, i) => {
-    const fr = nailFrame(f);
-    const cv = document.createElement('canvas'); cv.width = NW; cv.height = NH;
-    const tex = new THREE.CanvasTexture(cv);
-    const k = (f.rad[3] * 1.45) / 60;
-    const geo = new THREE.PlaneGeometry(1, 1, 20, 24);
-    const pos = geo.attributes.position, uv = geo.attributes.uv;
-    for (let j = 0; j < pos.count; j++) {
-      const u = uv.getX(j), v = uv.getY(j);
-      const cx = 24 + u * 112, cy = 174 - v * 152;
-      const p = nailSurface(fr, k, cx, cy, 0.0016);
-      pos.setXYZ(j, p.x, p.y, p.z);
-      uv.setXY(j, cx / NW, 1 - cy / NH);
-    }
-    geo.computeVertexNormals();
-    const patch = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.15, metalness: 0.05, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
-    patch.renderOrder = 2;
-    handG.add(patch);
-    disp.push({ fr, cv, ctx: cv.getContext('2d'), tex, k, dirty: true });
-  });
-  function nailPoint(i, cx, cy, lift) { const d = disp[i]; return nailSurface(d.fr, d.k, cx, cy, lift + 0.0016); }
-  function tintHex(hex, t) {
-    const b = [247, 221, 211], c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-    return `rgb(${b.map((v, i) => Math.round(v + (c[i] - v) * t)).join(',')})`;
-  }
-  function renderNail(i) {
-    const d = disp[i], c = d.ctx, n = nails[i];
-    c.clearRect(0, 0, NW, NH);
-    c.fillStyle = n && !n.done ? tintHex(COLORS[n.target].hex, 0.4) : '#f7ddd3';
-    nailPath(c); c.fill();
-    if (n) {
-      c.drawImage(n.cv, 0, 0);
-      if (n.done) {
-        c.save(); nailPath(c); c.clip();
-        c.globalAlpha = 0.45; c.fillStyle = '#fff'; c.beginPath(); c.ellipse(68, 80, 6, 24, -0.12, 0, Math.PI * 2); c.fill();
-        c.restore();
-      } else if (i === cur && state === 'play' && orderWait <= 0) {
-        const pulse = 0.5 + 0.5 * Math.sin(T * 7);
-        if (!painting) { c.lineWidth = 4; c.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.5})`; nailPath(c); c.stroke(); }
-      }
-    }
-    c.lineWidth = 1.5; c.strokeStyle = 'rgba(150,90,80,.45)'; nailPath(c); c.stroke();
-    d.tex.needsUpdate = true; d.dirty = false;
-  }
-  function updateNailTextures() {
-    disp.forEach((d, i) => { if (d.dirty || i === cur) renderNail(i); });
-  }
-  const markDirty = () => disp.forEach(d => { d.dirty = true; });
-
-  // the brush, held by the other hand; its tip sits at the origin
-  const brush3D = new THREE.Group(); handG.add(brush3D);
-  const bristleMat = mat(0xdddddd, { roughness: 0.25 });
-  const bristle = new THREE.Mesh(new THREE.BoxGeometry(0.0095, 0.012, 0.0026), bristleMat); bristle.position.y = 0.006; brush3D.add(bristle);
-  const ferrule = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0045, 0.012, 12), mat(0xc9d2da, { metalness: 0.8, roughness: 0.25 })); ferrule.position.y = 0.018; brush3D.add(ferrule);
-  const bHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0055, 0.3, 12), mat(0x15304a, { roughness: 0.2, metalness: 0.2 })); bHandle.position.y = 0.174; brush3D.add(bHandle);
-  let handX = 0;
-  // far = relaxed hand low in view; near = the current nail fills the screen while painting
-  const qFar = new THREE.Quaternion().setFromEuler(new THREE.Euler(1.22, 0, 0));
-  const nearQ = disp.map(d => {
-    const fr = d.fr, a = 0.3;
-    const mL = new THREE.Matrix4().makeBasis(fr.lat, fr.u, fr.up);
-    const mT = new THREE.Matrix4().makeBasis(V3(1, 0, 0), V3(0, Math.cos(a), -Math.sin(a)), V3(0, Math.sin(a), Math.cos(a)));
-    return new THREE.Quaternion().setFromRotationMatrix(mT.multiply(mL.transpose()));
-  });
-  const _q = new THREE.Quaternion();
-  let zoom = 0, swayX = 0, swayY = 0, swayVX = 0, swayVY = 0;
-  function placeHands(dt) {
-    const portrait = camera.aspect < 1;
-    const fi = Math.min(cur, 4);
-    const want = state === 'play' && ptr.down && orderWait <= 0 && nails[cur] && !nails[cur].done ? 1 : 0;
-    zoom += (want - zoom) * Math.min(1, dt * (want ? 7 : 5));
-    const ez = zoom * zoom * (3 - 2 * zoom);
-    _q.copy(qFar).slerp(nearQ[fi], ez);
-    handG.quaternion.copy(_q);
-    const P = nailPoint(fi, 80, 95, 0).multiplyScalar(handG.scale.x).applyQuaternion(_q);
-    const farT = portrait ? V3(0, -0.32, -1.0) : V3(0.02, -0.17, -0.55);
-    const nearT = portrait ? V3(0, -0.05, -0.2) : V3(0, -0.04, -0.15);
-    const tx = lerp(farT.x, nearT.x, ez), ty = lerp(farT.y, nearT.y, ez), tz = lerp(farT.z, nearT.z, ez);
-    const sw = lerp(1, 0.35, ez);  // sway in metres (less when the hand is close to the eye)
-    handG.position.set(tx + swayX * sw - P.x, ty + swayY * sw - P.y, tz - P.z);
-    fpv.visible = state === 'play';
-    brush3D.position.copy(nailPoint(fi, brushX(), brushY(), painting ? 0.001 : (ptr.down ? 0.006 : 0.016 + Math.sin(T * 3) * 0.003)));
-    // the brush comes in low from the right, lying along the nail
-    const fr = disp[fi].fr;
-    _bd.copy(fr.lat).multiplyScalar(0.62).addScaledVector(fr.u, -0.62).addScaledVector(fr.up, 0.48).normalize();
-    brush3D.quaternion.setFromUnitVectors(_y, _bd);
-    bristleMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
-  }
-  const _bd = new THREE.Vector3(), _y = new THREE.Vector3(0, 1, 0);
-  // how many screen pixels one nail-canvas pixel covers right now (so dragging follows your finger 1:1)
-  const _a = new THREE.Vector3(), _b = new THREE.Vector3();
-  function nailScreenScale() {
-    const fi = Math.min(cur, 4);
-    handG.updateMatrixWorld(true);
-    _a.copy(nailPoint(fi, 80, 40, 0)).applyMatrix4(handG.matrixWorld).project(camera);
-    _b.copy(nailPoint(fi, 80, 148, 0)).applyMatrix4(handG.matrixWorld).project(camera);
-    return Math.hypot((_a.x - _b.x) * innerWidth / 2, (_a.y - _b.y) * innerHeight / 2) / 108;
   }
 
   // ---------- entities ----------
@@ -875,15 +437,9 @@ body.touch #pad {
     foam: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }),
     gold: mat(0xffcc33, { emissive: 0xffaa00, emissiveIntensity: 0.5, metalness: 0.6, roughness: 0.2 }),
   };
-  const bottleMats = COLORS.map(c => mat(c.hex, { emissive: c.hex, emissiveIntensity: 0.35, roughness: 0.15 }));
   const pillarTex = (() => { const c = document.createElement('canvas'); c.width = 2; c.height = 64; const g = c.getContext('2d');
     const gr = g.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.9)');
     g.fillStyle = gr; g.fillRect(0, 0, 2, 64); return new THREE.CanvasTexture(c); })();
-  const pillarMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color: c.hex, map: pillarTex, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
-  const haloMats = COLORS.map(c => new THREE.SpriteMaterial({ map: softTex, color: c.hex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
-  const ringMats = COLORS.map(c => new THREE.MeshBasicMaterial({ color: c.hex, transparent: true, opacity: 0.55 }));
-  const goldRing = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.7 });
-
   let ents = [];
   const SPAWN_Z = -150;
   function addEnt(e) { scene.add(e.mesh); ents.push(e); }
@@ -920,67 +476,6 @@ body.touch #pad {
       fin(rand(-4, 4), SPAWN_Z);
     }
   }
-  function bottle(x, z, ci) {
-    const m = new THREE.Group();
-    const body = new THREE.Group(); m.add(body);
-    body.add(new THREE.Mesh(G.liquid, bottleMats[ci]));
-    body.add(new THREE.Mesh(G.glass, MT.glass));
-    const nk = new THREE.Mesh(G.neck, MT.glass); nk.position.y = 0.39; body.add(nk);
-    const cap = new THREE.Mesh(G.cap, MT.cap); cap.position.y = 0.8; body.add(cap);
-    const halo = new THREE.Sprite(haloMats[ci]); halo.scale.set(2.6, 2.6, 1); halo.position.y = 0.2; m.add(halo);
-    // "this one!" markers, shown only for the color the customer wants
-    const pillar = new THREE.Mesh(G.pillar, pillarMats[ci]); pillar.position.y = 8; m.add(pillar);
-    const arrow = new THREE.Mesh(G.arrow, MT.arrow); arrow.rotation.x = Math.PI; arrow.position.y = 2.3; m.add(arrow);
-    m.scale.setScalar(1.25);
-    addEnt({ kind: 'bottle', mesh: m, body, pillar, arrow, halo, x, z, r: 1.0, yOff: 0.75, phase: rand(0, 6), color: ci });
-  }
-  function spawnBottles() {
-    const n = nails[cur];
-    let ci;
-    const r = Math.random();
-    if (n && !n.done && r < 0.6) ci = n.target;
-    else ci = Math.floor(Math.random() * COLORS.length);
-    const x = bigAmt > 0.5 && Math.random() < 0.5 ? rand(-15.5, -11) : rand(-LANE + 0.5, LANE - 0.5);
-    if (Math.random() < 0.25) { for (let k = 0; k < 3; k++) bottle(x, SPAWN_Z - k * 4, ci); }
-    else bottle(x, SPAWN_Z, ci);
-  }
-  function clearEnts() { ents.forEach(e => scene.remove(e.mesh)); ents = []; }
-
-  // ---------- game state ----------
-  let state = 'title';
-  let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18;
-  let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, perfects = 0, ordersDone = 0, orderNo = 0;
-  let brush = null, nails = [], cur = 0, orderWait = 0;
-  let driftY = 0, driftV = 0, driftYV = 0, lastVx = 0, lastBodyY = 0, lastBodyVy = 0;
-  let spillFlash = 0, lastWant = -1, camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
-  let obsTimer = 2, botTimer = 0.8, invuln = 0, shake = 0, wob = 0, painting = false, drift = 0, landJolt = 0;
-  let nextBig = 20, bigLeft = 0;
-  const keys = { left: false, right: false, paint: false };
-
-  function newOrder() {
-    orderNo++;
-    const r = Math.random();
-    let targets;
-    const pick = () => Math.floor(Math.random() * COLORS.length);
-    if (orderNo === 1 || r < 0.3) { const c = pick(); targets = [c, c, c, c, c]; }
-    else if (r < 0.7) { const a = pick(); let b = pick(); while (b === a) b = pick(); targets = [a, b, a, b, a]; }
-    else { const s = COLORS.map((_, i) => i).sort(() => Math.random() - 0.5); targets = s.slice(0, 5); }
-    nails = targets.map(makeNail);
-    if (typeof markDirty === 'function') markDirty();
-    cur = 0; bx = 80; by = 138;
-    $('orderNo').textContent = orderNo;
-  }
-
-  function resetGame() {
-    clearEnts();
-    px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18;
-    score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; perfects = 0; ordersDone = 0; orderNo = 0;
-    brush = null; orderWait = 0; obsTimer = 2.4; botTimer = 0.5; invuln = 0; shake = 0; drift = 0;
-    nextBig = rand(20, 26); bigLeft = 0; bigAmt = 0; dist = 0; aerialT = 0; rideAcc = 0;
-    popQ.length = 0;
-    newOrder();
-  }
-
   // ---------- audio ----------
   let ac = null;
   function beep(f, dur, type = 'sine', vol = 0.12, slide = 1, delay = 0) {
@@ -1003,20 +498,150 @@ body.touch #pad {
     bad: () => beep(300, 0.3, 'square', 0.06, 0.7),
     order: () => [523, 659, 784, 1047, 1319].forEach((f, i) => beep(f, 0.22, 'triangle', 0.1, 1, i * 0.08)),
   };
-  // soft "brushing" noise while painting
-  let brushNoise = null;
-  function setBrushSound(on) {
-    if (!ac) return;
-    if (!brushNoise) {
-      const buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = buf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
-      const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 0.8;
-      const g = ac.createGain(); g.gain.value = 0;
-      src.connect(f); f.connect(g); g.connect(ac.destination); src.start();
-      brushNoise = g;
+  // ---------- the tray and the food she carries ----------
+  const tray = new THREE.Group(); rider.add(tray);
+  tray.position.set(0.55, 1.22, 0.0);
+  const trayDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.025, 32), mat(0xd9dee4, { metalness: 0.7, roughness: 0.25 }));
+  tray.add(trayDisc);
+  armL.pivot.rotation.set(0, 0.5, -0.4); armR.pivot.rotation.set(0, -0.5, -0.4);
+  function foodModel(id) {
+    const g = new THREE.Group();
+    if (id === 'ramen') {
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 0.16, 28, 1, true), mat(0xe8344a, { side: THREE.DoubleSide, roughness: 0.3 }));
+      bowl.position.y = 0.09; g.add(bowl);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.03, 20), mat(0xe8344a)); base.position.y = 0.02; g.add(base);
+      const soup = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.01, 28), mat(0xd99a4e, { roughness: 0.15 })); soup.position.y = 0.15; g.add(soup);
+      const naruto = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.015, 16), mat(0xffffff)); naruto.position.set(0.06, 0.16, 0.03); g.add(naruto);
+      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), mat(0xffcf5a)); egg.scale.y = 0.5; egg.position.set(-0.06, 0.16, -0.03); g.add(egg);
+      const nori = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.1, 0.08), mat(0x1d2b1f)); nori.position.set(-0.13, 0.19, 0.06); nori.rotation.z = 0.3; g.add(nori);
+      g.userData.level = soup;
+    } else if (id === 'sushi') {
+      const geta = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.22), mat(0xc58b4e)); geta.position.y = 0.03; g.add(geta);
+      const pieces = [];
+      [[-0.12, 0xff7b54], [0, 0xffd23f], [0.12, 0xe8344a]].forEach(([x, c]) => {
+        const p = new THREE.Group();
+        const rice = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.13), mat(0xfaf7ef)); rice.position.y = 0.075; p.add(rice);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.022, 0.15), mat(c, { roughness: 0.3 })); top.position.y = 0.11; p.add(top);
+        p.position.x = x; g.add(p); pieces.push(p);
+      });
+      g.userData.pieces = pieces;
+    } else {
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.42), mat(0xd9b27c)); box.position.y = 0.04; g.add(box);
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.005, 0.42), mat(0xe8344a)); lid.position.y = 0.075; g.add(lid);
+      const box2 = box.clone(); box2.position.y = 0.11; g.add(box2);
+      const lid2 = lid.clone(); lid2.position.y = 0.145; g.add(lid2);
+      g.userData.stack = [box2, lid2];
     }
-    brushNoise.gain.setTargetAtTime(on ? 0.035 : 0, ac.currentTime, 0.04);
+    return g;
+  }
+  const foodMeshes = {};
+  FOODS.forEach(f => { const m = foodModel(f.id); m.visible = false; tray.add(m); foodMeshes[f.id] = m; });
+  function showFood(id, left) {
+    FOODS.forEach(f => { foodMeshes[f.id].visible = f.id === id; });
+    if (!id) return;
+    const m = foodMeshes[id];
+    if (m.userData.level) m.userData.level.position.y = 0.06 + 0.09 * left;
+    if (m.userData.pieces) m.userData.pieces.forEach((p, i) => { p.visible = left > i * 0.33; });
+    if (m.userData.stack) m.userData.stack.forEach(p => { p.visible = left > 0.5; });
+  }
+
+  // ---------- labels drawn on canvas ----------
+  function makeLabel(text, bg, fg = '#fff') {
+    const c = document.createElement('canvas'); const g = c.getContext('2d');
+    const font = '800 44px "M PLUS Rounded 1c", "Hiragino Sans", sans-serif';
+    g.font = font; const w = Math.ceil(g.measureText(text).width) + 48;
+    c.width = w; c.height = 76; g.font = font;
+    g.fillStyle = bg; g.strokeStyle = '#15304a'; g.lineWidth = 6;
+    const r = 34; g.beginPath(); g.moveTo(r, 3); g.arcTo(w - 3, 3, w - 3, 73, r); g.arcTo(w - 3, 73, 3, 73, r); g.arcTo(3, 73, 3, 3, r); g.arcTo(3, 3, w - 3, 3, r); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, 40);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+    sp.scale.set(w / 76 * 1.1, 1.1, 1); sp.renderOrder = 5;
+    return sp;
+  }
+
+  // ---------- shop, customer, coins ----------
+  const W = {
+    wood: mat(0xb07a45, { roughness: 0.8 }), wall: mat(0xfff3dc), roof: mat(0xe8344a, { roughness: 0.5 }),
+    hull: mat(0xffffff, { roughness: 0.4 }), hullStripe: mat(0x10a5c2), coin: mat(0xffcc33, { emissive: 0xffaa00, emissiveIntensity: 0.4, metalness: 0.7, roughness: 0.25 }),
+    lantern: mat(0xff5b4f, { emissive: 0xff3b2f, emissiveIntensity: 0.8 }), cloth: mat(0x2d4b8f, { side: THREE.DoubleSide }),
+  };
+  const zoneMat = (c) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85 });
+  const pillarMat = (c) => new THREE.MeshBasicMaterial({ color: c, map: pillarTex, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  const SHOP_C = 0xffa21a, CUST_C = 0x3fe0a8;
+  function targetMarkers(m, color) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.12, 8, 48), zoneMat(color)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.15; m.add(ring);
+    const pillar = new THREE.Mesh(G.pillar, pillarMat(color)); pillar.scale.set(2, 1.2, 2); pillar.position.y = 9.6; m.add(pillar);
+    const arrow = new THREE.Mesh(G.arrow, MT.arrow); arrow.rotation.x = Math.PI; arrow.scale.setScalar(1.6); arrow.position.y = 4.2; m.add(arrow);
+    return { ring, pillar, arrow };
+  }
+  function spawnShop(food) {
+    const m = new THREE.Group();
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const x = rand(-5.5, 5.5);
+    const raft = new THREE.Group(); raft.position.x = clamp(x + side * 5.2, -13, 13) - x; raft.scale.setScalar(1.6); m.add(raft);
+    const deckM = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.35, 3.2), W.wood); deckM.position.y = 0.1; raft.add(deckM);
+    const hut = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.7, 2.0), W.wall); hut.position.y = 1.1; raft.add(hut);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.0, 4), W.roof); roof.rotation.y = Math.PI / 4; roof.position.y = 2.45; raft.add(roof);
+    const noren = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.6), W.cloth); noren.position.set(0, 1.55, 1.02); raft.add(noren);
+    [-0.9, 0.9].forEach(lx => { const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), W.lantern); l.scale.y = 1.3; l.position.set(lx, 1.6, 1.15); raft.add(l); });
+    const label = makeLabel(food.shop, '#ff9d00'); label.position.set(0, 3.6, 0); raft.add(label);
+    const mk = targetMarkers(m, SHOP_C);
+    addEnt({ kind: 'shop', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, raft });
+  }
+  function spawnCustomer(who) {
+    const m = new THREE.Group();
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const x = rand(-5.5, 5.5);
+    const boat = new THREE.Group(); boat.position.x = clamp(x + side * 4.6, -13, 13) - x; boat.scale.setScalar(1.6); m.add(boat);
+    const hull = new THREE.Mesh(new THREE.CylinderGeometry(1, 0.7, 0.7, 24, 1, false, 0, Math.PI * 2), W.hull); hull.scale.set(1.1, 1, 2.2); hull.position.y = 0.15; boat.add(hull);
+    const stripeM = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.02, 0.12, 24), W.hullStripe); stripeM.scale.set(1.1, 1, 2.2); stripeM.position.y = 0.38; boat.add(stripeM);
+    const person = new THREE.Group(); person.position.set(0, 0.5, 0.2); boat.add(person);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.9, 16), mat([0xff7b54, 0x7b61ff, 0x2fb57a, 0xffd23f][Math.floor(Math.random() * 4)])); body.position.y = 0.55; person.add(body);
+    const headM = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 14), mat(0xf2c3a0)); headM.position.y = 1.25; person.add(headM);
+    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 20), mat(0xf3dfae)); hat.position.y = 1.45; person.add(hat);
+    const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.18, 16), mat(0xf3dfae)); hatTop.position.y = 1.55; person.add(hatTop);
+    const arm = new THREE.Group(); arm.position.set(0.3, 0.9, 0); person.add(arm);
+    const armM = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 10), mat(0xf2c3a0)); armM.position.y = 0.3; arm.add(armM);
+    const label = makeLabel(who, '#2fb57a'); label.position.set(0, 2.6, 0); boat.add(label);
+    const mk = targetMarkers(m, CUST_C);
+    addEnt({ kind: 'cust', mesh: m, x, z: SPAWN_Z, r: 2.2, yOff: 0, ...mk, arm, phase: rand(0, 6) });
+  }
+  const coinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.08, 24);
+  function spawnCoins() {
+    const x0 = bigAmt > 0.5 && Math.random() < 0.5 ? rand(-15, -11) : rand(-6, 6);
+    const curve = rand(-0.25, 0.25);
+    for (let k = 0; k < 6; k++) {
+      const m = new THREE.Mesh(coinGeo, W.coin); m.rotation.x = Math.PI / 2;
+      addEnt({ kind: 'coin', mesh: m, x: clamp(x0 + curve * k * k, -LANE - 8, LANE), z: SPAWN_Z - k * 3.2, r: 0.7, yOff: 1.0, phase: k * 0.5 });
+    }
+  }
+  function clearEnts() { ents.forEach(e => scene.remove(e.mesh)); ents = []; }
+  function targetEnt() { return ents.find(e => (e.kind === 'shop' || e.kind === 'cust') && !e.gone); }
+
+  // ---------- game state ----------
+  let state = 'title';
+  let px = 0, vx = 0, jumpY = 0, vy = 0, speed = 18, lastVx = 0;
+  let score = 0, timeLeft = GAME_TIME, elapsed = 0, combo = 0, delivered = 0, clean = 0;
+  let phase = 'pickup', food = null, foodLeft = 1, legTime = 0, targetWait = 1.2, airMax = 0, customer = '';
+  let camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
+  let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, tilt = 0, tiltV = 0, spillCool = 0;
+  let nextBig = 20, bigLeft = 0;
+  const keys = { left: false, right: false };
+  const drag = { id: null, x0: 0, y0: 0, x: 0, steer: 0, jumped: false };
+
+  function newLeg(p) {
+    phase = p; legTime = 0; targetWait = 1.0;
+    if (p === 'pickup') { food = FOODS[Math.floor(Math.random() * FOODS.length)]; foodLeft = 1; showFood(null); }
+    else { customer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; }
+  }
+  function resetGame() {
+    clearEnts();
+    px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
+    score = 0; timeLeft = GAME_TIME; elapsed = 0; combo = 0; delivered = 0; clean = 0;
+    obsTimer = 2.4; coinTimer = 1.2; invuln = 0; shake = 0; tilt = 0; tiltV = 0;
+    nextBig = rand(22, 28); bigLeft = 0; bigAmt = 0; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
+    popQ.length = 0;
+    newLeg('pickup');
   }
 
   // ---------- HUD ----------
@@ -1036,157 +661,89 @@ body.touch #pad {
   }
   function flash() { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.35; requestAnimationFrame(() => { f.style.transition = 'opacity .4s'; f.style.opacity = 0; }); }
 
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function fitCanvas(cv) {
-    const r = cv.getBoundingClientRect(); const d = Math.min(devicePixelRatio, 2);
-    cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
-  }
-  // brush position on the nail canvas
-  let bx = 80, by = 146;
-
   function updateHUD() {
     $('score').textContent = score.toLocaleString();
     const tEl = $('time'); tEl.textContent = Math.max(0, timeLeft).toFixed(1); tEl.classList.toggle('low', timeLeft < 15);
-    const sw = $('swatch');
-    if (brush == null) { sw.style.background = ''; $('brushName').textContent = 'なし'; }
-    else { sw.style.background = COLORS[brush].hex; $('brushName').textContent = COLORS[brush].name; }
-    const steady = 1 - wob;
-    const wb = $('wobBar').firstElementChild;
-    wb.style.width = (steady * 100) + '%';
-    wb.style.background = steady > 0.72 ? '#35c08a' : steady > 0.45 ? '#ffc93c' : '#e8344a';
-    $('combo').textContent = px < WALL_X && jumpY === 0 ? `波ライド中 +${bigAmt > 0.5 ? 80 : 40}/秒` : combo >= 2 ? `${combo} コンボ!` : '';
-    const n = nails[cur];
-    const wb2 = $('wantBig'), ws = $('wantState'), bp = $('doneBtn');
-    if (n && !n.done) {
-      const col = COLORS[n.target].hex;
-      const w = $('wantName'); w.textContent = COLORS[n.target].name; w.style.background = col;
-      $('wantBottle').style.background = col;
-      if (lastWant !== n.target) { lastWant = n.target; wb2.classList.remove('bump'); void wb2.offsetWidth; wb2.classList.add('bump'); }
-      const ok = brush === n.target;
-      ws.textContent = ok ? '✓ ぬれるよ！' : 'のボトルをひろおう';
-      ws.className = ok ? 'ok' : 'ng';
-      $('fingerName').textContent = `${FINGER_NAMES[cur]} ${Math.round(n.cov * 100)}%`;
-      bp.classList.toggle('ready', n.cov >= 0.8);
-    } else if (orderWait > 0) {
-      $('fingerName').textContent = 'お会計中'; ws.textContent = 'つぎのお客さん…'; ws.className = '';
-    }
-    $('nailCard').classList.toggle('warn', spillFlash > 0);
-    $('zure').hidden = !(painting && Math.abs(drift) > 1.8);
-    if (!$('zure').hidden) $('zure').textContent = drift > 0 ? 'ズレてる！ →' : '← ズレてる！';
-    nails.forEach((nn, i) => {
-      if (nn.used != null) nail3D[i].material.color.set(COLORS[nn.used].hex);
-      else nail3D[i].material.color.set(0xf3d9cf);
-    });
-    brushTipMat.color.set(brush == null ? 0xdddddd : COLORS[brush].hex);
-    updateNailTextures();
+    $('combo').textContent = px < WALL_X && jumpY === 0 ? `波ライド +${bigAmt > 0.5 ? 80 : 40}/秒` : combo >= 2 ? `${combo} 連続きれい！` : '';
+    const tag = $('taskTag');
+    if (phase === 'pickup') { tag.textContent = '受け取り'; tag.className = 'shop'; $('taskName').textContent = `${food.shop}へ`; }
+    else { tag.textContent = 'お届け'; tag.className = 'cust'; $('taskName').textContent = `${food.name}を${customer}へ`; }
+    const t = targetEnt();
+    if (t && t.z < 0) {
+      $('taskDist').textContent = `あと ${Math.round(-t.z)}m`;
+      const dx = t.x - px;
+      $('dir').textContent = Math.abs(dx) < 1.6 ? 'まっすぐ' : dx < 0 ? '← 左' : '右 →';
+    } else { $('taskDist').textContent = 'さがし中…'; $('dir').textContent = ''; }
+    $('foodRow').hidden = phase !== 'deliver';
+    const fb = $('foodBar').firstElementChild;
+    fb.style.width = (foodLeft * 100) + '%';
+    fb.style.background = foodLeft > 0.7 ? '#2fb57a' : foodLeft > 0.35 ? '#ffc93c' : '#e8344a';
+    $('foodPct').textContent = Math.round(foodLeft * 100) + '%';
   }
 
   // ---------- gameplay ----------
   function jump() {
     if (state !== 'play' || jumpY > 0.01) return;
-    vy = 8.2; sfx.jump();
+    vy = 8.2; sfx.jump(); airMax = 0;
     for (let i = 0; i < 14; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(2, 5), rand(0, 4));
   }
-  const brushWidth = () => BRUSH_W;
-
-  function finishNail() {
-    const n = nails[cur];
-    evalNail(n);
-    n.done = true; n.sp = 0;
-    const { cov, spill } = n;
-    let base, label, col;
-    if (cov >= 0.86 && spill <= 0.04) { n.result = 'perfect'; base = 300; combo++; perfects++; label = 'パーフェクト！'; col = '#ffd23f'; sfx.perfect(); }
-    else if (cov >= 0.75 && spill <= 0.1) { n.result = 'good'; base = 150; combo++; label = 'グッド'; col = '#ffffff'; sfx.good(); }
-    else { n.result = 'messy'; base = 50; combo = 0; label = 'はみだし…'; col = '#ffd0dc'; sfx.bad(); }
-    const pts = Math.round(base * (1 + Math.min(combo, 10) * 0.1) * (bigAmt > 0.5 ? 2 : 1));
-    score += pts;
-    pop(`${label} +${pts}`, col);
-    disp[cur].dirty = true;
-    cur++;
-    resetBrush(); ptr.down = false;
-    if (cur >= 5) finishOrder();
-  }
-
-  function finishOrder() {
-    ordersDone++;
-    const bonus = 300 * (bigAmt > 0.5 ? 2 : 1);
-    score += bonus; timeLeft += 5;
-    pop(`お客さん完成！ +${bonus}  +5秒`, '#9ff3d0');
-    setTimeout(sfx.order, 300);
-    orderWait = 1.8;
-  }
-
-  // the player's own stroke: drag to move the brush; body motion and waves push it off
-  const ptr = { down: false, id: null, x: 0, y: 0 };
-  let lastPX = 0, lastPY = 0;
-  const brushX = () => clamp(bx + drift, 24, 136);
-  const brushY = () => clamp(by + driftY, 22, 176);
-  function resetBrush() { bx = 80; by = 138; }
-  function doPaint(dt) {
-    const was = painting;
-    painting = false;
-    const n = nails[cur];
-    if (!ptr.down || orderWait > 0 || !n || n.done) { if (was) setBrushSound(false); return; }
-    if (jumpY > 0.05) { hint('空中ではぬれないよ'); setBrushSound(false); return; }
-    if (brush !== n.target) { hint(`「${COLORS[n.target].name}」のボトルをひろってね`); setBrushSound(false); return; }
-    painting = true;
-    n.used = brush;
-    const x = brushX(), y = brushY();
-    if (!was) { setBrushSound(true); lastPX = x; lastPY = y; }
-    const steps = Math.max(1, Math.ceil(Math.hypot(x - lastPX, y - lastPY) / 1.5));
-    for (let k = 1; k <= steps; k++) {
-      const t = k / steps;
-      dab(n, lerp(lastPX, x, t), lerp(lastPY, y, t), BRUSH_W, brush, 0.35);
+  // anything that jolts the tray spills some of the food
+  function spill(amount, why) {
+    if (phase !== 'deliver' || amount <= 0) return;
+    const before = foodLeft;
+    foodLeft = Math.max(0, foodLeft - amount * food.fragile);
+    showFood(food.id, foodLeft);
+    const lost = before - foodLeft;
+    if (lost > 0.04 && spillCool <= 0) {
+      spillCool = 0.6;
+      hint(`${why}で こぼれた！ -${Math.round(lost * 100)}%`);
+      const b = $('foodBar'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+      sfx.bad();
+      const wp = new THREE.Vector3(); tray.getWorldPosition(wp);
+      for (let i = 0; i < 18; i++) emit(wp.x, wp.y + 0.2, wp.z, rand(-3, 3), rand(1, 4), rand(-2, 2));
     }
-    lastPX = x; lastPY = y;
-    n.evalT -= dt;
-    if (n.evalT <= 0) {
-      const before = n.spill; evalNail(n); n.evalT = 0.12;
-      if (n.spill > before + 0.002) {
-        spillFlash = 0.35;
-        if (Math.abs(drift) > 1.8) hint(keys.left || keys.right ? '←→で動くと ハケがズレて はみだす！' : 'ゆれで ハケがズレた！ じっとして');
-        else hint('ツメの外にはみ出してるよ！');
-      }
-      if (n.cov >= 0.94) { finishNail(); setBrushSound(false); painting = false; }
+    if (foodLeft <= 0) {
+      pop(`${food.name}が ぜんぶこぼれた…`, '#ffd0dc'); combo = 0;
+      ents.filter(e => e.kind === 'cust').forEach(e => { e.gone = true; });
+      newLeg('pickup');
     }
   }
-  function finishByPlayer() {
-    const n = nails[cur];
-    if (state !== 'play' || orderWait > 0 || !n || n.done) return;
-    evalNail(n);
-    if (n.cov < 0.3) { hint('まだほとんどぬれてないよ'); return; }
-    finishNail(); setBrushSound(false); painting = false;
+  function pickup() {
+    newLeg('deliver'); showFood(food.id, 1);
+    sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
+    hint('ゆっくり曲がって、こぼさないように！');
   }
-
+  function deliver() {
+    const tip = Math.max(0, Math.round(320 - legTime * 22));
+    const m = bigAmt > 0.5 ? 2 : 1;
+    const isClean = foodLeft >= 0.85;
+    if (isClean) { combo++; clean++; } else combo = 0;
+    const pts = Math.round((food.base * foodLeft + tip) * m * (1 + Math.min(combo, 8) * 0.1));
+    score += pts; delivered++; timeLeft += 6;
+    pop(isClean ? `きれいに お届け！ +${pts}` : `お届け！ +${pts}`, isClean ? '#ffd23f' : '#fff');
+    pop(`チップ ${tip}  +6秒`, '#9ff3d0');
+    sfx.order();
+    newLeg('pickup');
+  }
   function onHit() {
-    invuln = 1.6; shake = 0.6; speed *= 0.6; combo = 0;
+    invuln = 1.6; shake = 0.6; speed *= 0.6;
     timeLeft -= 3; sfx.hit(); flash();
-    const n = nails[cur];
-    let msg = 'ドボン！ -3秒';
-    if (n && !n.done && n.used != null) { smear(n, n.used); n.sp = 0; disp[cur].dirty = true; msg = 'ぶつかって はみだした！ -3秒'; }
-    pop(msg, '#ffd0dc');
+    pop('ドボン！ -3秒', '#ffd0dc');
+    spill(0.35, 'ぶつかった');
+    tiltV += rand(-6, 6);
     for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), surfer.position.y + 0.3, rand(-1, 1), rand(-5, 5), rand(3, 8), rand(-3, 3));
   }
-
   function endGame() {
     state = 'over';
-    setBrushSound(false);
     let best = 0;
-    try { best = +localStorage.getItem('nailsurf-best3') || 0; if (score > best) { best = score; localStorage.setItem('nailsurf-best3', String(score)); } } catch (e) { best = Math.max(best, score); }
-    const rank = score >= 9000 ? 'S' : score >= 6000 ? 'A' : score >= 3000 ? 'B' : 'C';
-    $('rank').textContent = rank;
+    try { best = +localStorage.getItem('surfdemae-best') || 0; if (score > best) { best = score; localStorage.setItem('surfdemae-best', String(score)); } } catch (e) { best = Math.max(best, score); }
+    $('rank').textContent = score >= 6000 ? 'S' : score >= 4000 ? 'A' : score >= 2000 ? 'B' : 'C';
     $('rScore').textContent = score.toLocaleString();
-    $('rPerfect').textContent = perfects;
-    $('rOrders').textContent = ordersDone + ' 人';
+    $('rDone').textContent = delivered + ' 回';
+    $('rClean').textContent = clean + ' 回';
     $('rBest').textContent = best.toLocaleString();
-    $('over').hidden = false; $('big').hidden = true;
-    keys.left = keys.right = false; ptr.down = false;
-    $('doneBtn').hidden = true; $('help').hidden = true; $('danger').hidden = true;
-    document.querySelectorAll('#pad button').forEach(b => b.classList.remove('on'));
+    $('over').hidden = false; $('big').hidden = true; $('help').hidden = true;
+    keys.left = keys.right = false; endDrag();
     setTimeout(() => $('retryBtn').focus(), 50);
   }
 
@@ -1195,104 +752,90 @@ body.touch #pad {
     const playing = state === 'play';
 
     let input = 0;
-    if (playing) input = clamp((keys.right ? 1 : 0) - (keys.left ? 1 : 0) + stick.x, -1, 1);
+    if (playing) input = clamp((keys.right ? 1 : 0) - (keys.left ? 1 : 0) + drag.steer, -1, 1);
     else if (state === 'title') input = clamp(Math.sin(T * 0.7) * 1.4 - px * 0.25, -1, 1);
-    const accel = (painting ? 30 : 44) * (jumpY > 0 ? 0.25 : 1);
-    vx += input * accel * dt;
-    vx *= Math.pow(0.04, dt);
-    // on the wave face gravity pulls you back down: hold ← to climb
-    if (px < WALL_X && jumpY === 0) {
+    vx += input * 40 * (jumpY > 0 ? 0.25 : 1) * dt;
+    if (px < WALL_X && jumpY === 0) { // the wave face pulls you back down: hold left to climb
       const slope = (waveH(px + 0.3, 0) - waveH(px - 0.3, 0)) / 0.6;
       vx -= slope * 10 * dt;
     }
+    vx *= Math.pow(0.04, dt);
     vx = clamp(vx, -12, 11);
+    const ax = (vx - lastVx) / Math.max(dt, 1e-3); lastVx = vx;
     px += vx * dt;
     if (px < MIN_X) { px = MIN_X; vx = Math.max(0, vx); }
-    // reach the lip with speed and you launch into an aerial
+    if (px > LANE) { px = LANE; vx = Math.min(0, vx); }
     if (px > LIP_X + 4) aerialReady = true;
     if (playing && aerialReady && jumpY === 0 && px < LIP_X && vx < -4) {
-      aerialReady = false;
+      aerialReady = false; airMax = 0;
       vy = 12.5; jumpY = 0.01; vx = 4.8; aerialT = 0.001; sfx.jump(); beep(660, 0.4, 'triangle', 0.08, 2);
       pop('エアリアル！', '#ffd23f');
       for (let i = 0; i < 40; i++) emit(px + rand(-1, 1), waveH(px, 0) + 0.3, rand(-1, 1), rand(-2, 4), rand(3, 9), rand(-2, 2));
     }
-    if (px > LANE) { px = LANE; vx = Math.min(0, vx); }
-
     if (jumpY > 0 || vy > 0) {
-      vy -= 22 * dt; jumpY += vy * dt;
+      vy -= 22 * dt; jumpY += vy * dt; airMax = Math.max(airMax, jumpY);
       if (aerialT > 0) aerialT += dt;
-      if (jumpY <= 0 && aerialT > 0) {
-        const pts = Math.round(400 * (bigAmt > 0.5 ? 2 : 1));
-        score += pts; pop(`エアリアル成功！ +${pts}`, '#ffd23f'); sfx.order(); aerialT = 0;
+      if (jumpY <= 0) {
+        if (aerialT > 0) {
+          const pts = Math.round(400 * (bigAmt > 0.5 ? 2 : 1));
+          score += pts; pop(`エアリアル成功！ +${pts}`, '#ffd23f'); sfx.order(); aerialT = 0;
+          spill(0.3, 'エアリアルの着地');
+        } else spill(0.04 + airMax * 0.05, 'ジャンプの着地');
+        jumpY = 0; vy = 0; landJolt = 0.5; tiltV += rand(-4, 4);
+        for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3));
       }
-      if (jumpY <= 0) { driftYV += 320; driftV += rand(-200, 200); swayVY -= 0.5; jumpY = 0; vy = 0; landJolt = 0.5; for (let i = 0; i < 10; i++) emit(px + rand(-0.6, 0.6), surfer.position.y, rand(-1, 1), rand(-2, 2), rand(1, 3), rand(0, 3)); }
     }
     landJolt = Math.max(0, landJolt - dt * 1.5);
+    spillCool = Math.max(0, spillCool - dt);
 
     if (playing) {
-      elapsed += dt; timeLeft -= dt;
+      elapsed += dt; timeLeft -= dt; legTime += dt;
+      const target = lerp(18, 28, clamp(elapsed / 100, 0, 1));
+      speed += (target - speed) * Math.min(1, dt * 0.8);
+      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft < 4) $('big').hidden = true; if (bigLeft <= 0) nextBig = elapsed + rand(20, 26); }
+      else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 9; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
       if (px < WALL_X && jumpY === 0) {
         rideAcc += dt * 40 * (bigAmt > 0.5 ? 2 : 1);
         if (rideAcc >= 1) { score += Math.floor(rideAcc); rideAcc -= Math.floor(rideAcc); }
       }
-      const target = lerp(18, 30, clamp(elapsed / 100, 0, 1));
-      speed += (target - speed) * Math.min(1, dt * 0.8);
-      if (bigLeft > 0) { bigLeft -= dt; if (bigLeft < 4) $('big').hidden = true; if (bigLeft <= 0) nextBig = elapsed + rand(18, 24); }
-      else if (elapsed >= nextBig && timeLeft > 8) { bigLeft = 9; $('big').hidden = false; beep(220, 0.6, 'sawtooth', 0.06, 2); }
     } else speed += (16 - speed) * Math.min(1, dt);
     bigAmt += ((bigLeft > 0 ? 1 : 0) - bigAmt) * Math.min(1, dt * 1.2);
     dist += speed * dt;
 
-    // both hands hang on springs: turning (sideways acceleration), wave bounce and board chatter
-    // push the brush hand and the nail hand differently, so the brush slips off the nail
-    const ax = clamp((vx - lastVx) / Math.max(dt, 1e-3), -90, 90); lastVx = vx;
-    const bodyY = waveH(px, 0) + jumpY;
-    const vyB = (bodyY - lastBodyY) / Math.max(dt, 1e-3); lastBodyY = bodyY;
-    const ay = clamp((vyB - lastBodyVy) / Math.max(dt, 1e-3), -60, 60); lastBodyVy = vyB;
-    const chatter = Math.abs(vx) * 0.55 + bigAmt * 7 + (px < WALL_X ? 4 : 0) + (invuln > 1 ? 10 : 0);
-    const nX = (Math.sin(T * 6.3) + Math.sin(T * 9.7 + 1)) * chatter * 22;
-    const nY = (Math.sin(T * 7.9 + 2) + Math.sin(T * 5.1)) * chatter * 16;
-    driftV += (-60 * drift - 7 * driftV - ax * 22 + nX) * dt;
-    driftYV += (-60 * driftY - 7 * driftYV + (jumpY > 0 ? 0 : ay) * 9 + nY) * dt;
-    drift = clamp(drift + driftV * dt, -40, 40); driftY = clamp(driftY + driftYV * dt, -40, 40);
-    swayVX += (-40 * swayX - 6 * swayVX - ax * 0.0011 + nX * 0.00004) * dt;
-    swayVY += (-40 * swayY - 6 * swayVY + ay * 0.0007 + nY * 0.00004) * dt;
-    swayX = clamp(swayX + swayVX * dt, -0.08, 0.08); swayY = clamp(swayY + swayVY * dt, -0.08, 0.08);
-    wob += (clamp(Math.hypot(drift, driftY) / 14, 0, 1) - wob) * Math.min(1, dt * 8);
+    // the tray tips with sharp turns and chop; tipping past a point spills
+    const chop = bigAmt * 0.6 + (px < WALL_X ? 0.35 : 0);
+    tiltV += (-clamp(ax, -120, 120) * 0.15 - tilt * 30 - tiltV * 6 + Math.sin(T * 8.3) * chop * 6) * dt;
+    tilt += tiltV * dt;
+    if (playing && jumpY === 0) spill(Math.max(0, Math.abs(tilt) - 0.12) * dt * 1.6, '急カーブ');
 
     if (playing) {
-      if (orderWait > 0) { orderWait -= dt; if (orderWait <= 0) newOrder(); }
-      doPaint(dt);
+      // the next shop / customer shows up a moment after the last one
+      if (!targetEnt()) { targetWait -= dt; if (targetWait <= 0) { phase === 'pickup' ? spawnShop(food) : spawnCustomer(customer); targetWait = 1.0; } }
       const diff = clamp(elapsed / GAME_TIME, 0, 1);
-      obsTimer -= dt; botTimer -= dt;
-      if (obsTimer <= 0) { spawnObstacles(diff); obsTimer = lerp(1.4, 0.75, diff) * rand(0.75, 1.25); }
-      if (botTimer <= 0) { spawnBottles(); botTimer = rand(1.0, 1.6) * (bigAmt > 0.5 ? 0.7 : 1); }
+      obsTimer -= dt; coinTimer -= dt;
+      const t = targetEnt();
+      const nearTarget = t && t.z < SPAWN_Z + 16;
+      if (obsTimer <= 0) { if (!nearTarget) spawnObstacles(diff); obsTimer = lerp(1.5, 0.8, diff) * rand(0.75, 1.25); }
+      if (coinTimer <= 0) { if (!nearTarget) spawnCoins(); coinTimer = rand(2.5, 4); }
       if (invuln > 0) invuln -= dt;
       if (timeLeft <= 0) { timeLeft = 0; endGame(); }
-    } else painting = false;
+    }
 
+    // surfer on the wave
     const sy = waveH(px, 0);
     const dhx = (waveH(px + 0.5, 0) - waveH(px - 0.5, 0));
     const dhz = (waveH(px, -0.8) - waveH(px, 0.8)) / 1.6;
     surfer.position.set(px, sy + 0.08 + jumpY, 0);
-    shadow.position.set(px + 0.3, sy + 0.12, 0.3);
-    shadow.rotation.set(-Math.PI / 2 - Math.atan(dhz) * 0.8, 0, 0);
-    shadow.rotation.y = -vx * 0.05;
-    shadow.material.opacity = clamp(1 - jumpY * 0.3, 0.2, 1);
-    const shs = 1 + jumpY * 0.15; shadow.scale.set(shs, shs, 1);
+    surfer.rotation.y = aerialT > 0 ? Math.PI * 2 * clamp(aerialT / 1.0, 0, 1) : 0;
     board.rotation.set(-Math.atan(dhz) * 0.8 + (jumpY > 0 ? -0.25 : 0), -vx * 0.05, Math.atan(dhx) * 0.9 - vx * 0.035);
     rider.rotation.y = Math.PI * 0.02;
     rider.rotation.z = -Math.abs(vx) * 0.01;
-    rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02 - (painting ? 0.08 : 0);
-    surfer.visible = true; rider.visible = state === 'title';
-    shadow.visible = state === 'title';
-
-    armL.pivot.rotation.set(0, 0.55, -0.35);
-    if (painting) {
-      armR.pivot.rotation.set(0, -0.95 + Math.sin(T * 22) * 0.06 * (0.3 + wob), -0.25 + Math.sin(T * 11) * 0.05);
-    } else {
-      armR.pivot.rotation.set(0, 0.9 - vx * 0.03, 0.45 + Math.sin(T * 2) * 0.08);
-    }
+    rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02;
+    surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
+    tray.rotation.set(tilt * 0.8, 0, tilt * 1.6);
+    shadow.position.set(px + 0.3, sy + 0.12, 0.3);
+    shadow.rotation.set(-Math.PI / 2 - Math.atan(dhz) * 0.8, 0, 0);
+    shadow.material.opacity = clamp(1 - jumpY * 0.3, 0.2, 1);
 
     if (jumpY === 0) {
       const n = 2 + Math.abs(vx) * 0.4;
@@ -1303,30 +846,33 @@ body.touch #pad {
       e.z += speed * dt;
       if (e.kind === 'fin') e.x = clamp(e.baseX + Math.sin(T * 1.6 + e.phase) * e.swing, -LANE, LANE);
       const y = waveH(e.x, e.z);
-      e.mesh.position.set(e.x, y + e.yOff + (e.kind === 'bottle' ? Math.sin(T * 3 + e.phase) * 0.2 : 0), e.z);
-      if (e.kind === 'bottle') {
-        e.body.rotation.y += dt * 2.4;
-        const want = playing && orderWait <= 0 && nails[cur] && !nails[cur].done && nails[cur].target === e.color && brush !== e.color;
-        e.pillar.visible = want && e.z < -18; e.arrow.visible = want && e.z < -4;
-        e.arrow.position.y = 2.3 + Math.sin(T * 6 + e.phase) * 0.25; e.arrow.rotation.y += dt * 3;
-        const sc = want ? 1.45 + Math.sin(T * 8) * 0.08 : 1.0;
-        e.mesh.scale.setScalar(sc);
-        e.halo.material.opacity = want ? 0.95 : 0.45;
-      }
+      e.mesh.position.set(e.x, y + e.yOff + (e.kind === 'coin' ? Math.sin(T * 3 + e.phase) * 0.15 : 0), e.z);
+      if (e.kind === 'coin') e.mesh.rotation.z += dt * 3;
       if (e.kind === 'buoy') e.mesh.rotation.z = Math.sin(T * 2 + e.phase) * 0.2;
       if (e.kind === 'fin') e.mesh.rotation.y = Math.cos(T * 1.6 + e.phase) > 0 ? 0 : Math.PI;
+      if (e.kind === 'shop' || e.kind === 'cust') {
+        e.arrow.position.y = 4.2 + Math.sin(T * 5) * 0.3; e.arrow.rotation.y += dt * 3;
+        e.pillar.visible = e.z < -22;
+        e.ring.scale.setScalar(1 + Math.sin(T * 6) * 0.05);
+        if (e.arm) e.arm.rotation.z = -0.4 + Math.sin(T * 7 + e.phase) * 0.6;
+        if (playing && !e.gone && Math.abs(e.z) < 1.6 && Math.abs(e.x - px) < e.r && jumpY < 2) {
+          e.gone = true; e.ring.visible = e.pillar.visible = e.arrow.visible = false;
+          if (e.kind === 'shop' && phase === 'pickup') pickup();
+          else if (e.kind === 'cust' && phase === 'deliver') deliver();
+        }
+        if (playing && !e.gone && e.z > 3) {
+          e.gone = true; e.ring.visible = e.pillar.visible = e.arrow.visible = false;
+          pop(e.kind === 'shop' ? 'お店を通りすぎた！' : 'お客さんを通りすぎた！', '#ffd0dc'); combo = 0;
+        }
+        continue;
+      }
       if (playing && !e.gone && Math.abs(e.z) < 1.3 && Math.abs(e.x - px) < e.r + 0.45) {
-        if (e.kind === 'bottle') {
-          if (jumpY < 2.2) {
-            e.gone = true; score += 10;
-            brush = e.color; sfx.pick();
-            for (let i = 0; i < 16; i++) emit(e.x, y + 1, e.z, rand(-3, 3), rand(1, 5), rand(-3, 3));
-          }
-        } else if (invuln <= 0 && jumpY < 0.9) { e.gone = true; onHit(); }
+        if (e.kind === 'coin') { if (Math.abs(jumpY + 1 - e.yOff) < 1.6) { e.gone = true; score += 10; beep(1320, 0.08, 'triangle', 0.06); } }
+        else if (invuln <= 0 && jumpY < 0.9) { e.gone = true; onHit(); }
       }
     }
     ents = ents.filter(e => {
-      const keep = e.z < 14 && !(e.gone && e.kind === 'bottle');
+      const keep = e.z < 16 && !(e.gone && e.kind === 'coin');
       if (!keep) scene.remove(e.mesh);
       return keep;
     });
@@ -1340,27 +886,15 @@ body.touch #pad {
       pPos[i * 3] = p.x; pPos[i * 3 + 1] = p.y; pPos[i * 3 + 2] = p.z;
     }
     pGeo.attributes.position.needsUpdate = true;
-
     updateOcean();
 
+    // camera behind and above, following the surfer
     shake = Math.max(0, shake - dt);
-    const sh = shake * 0.5 + bigAmt * 0.06;
-    if (state === 'title') {
-      camera.position.set(px * 0.55 + 1.2, sy * 0.6 + 3.9, 7.4);
-      camera.rotation.set(0, 0, 0); camera.lookAt(px * 0.75, sy * 0.5 + 1.2, -9);
-    } else {
-      camY += (sy - camY) * Math.min(1, dt * 6);
-      camera.rotation.order = 'YXZ';
-      camera.position.set(px + rand(-sh, sh) * 0.3, camY + 1.75 + jumpY + rand(-sh, sh) * 0.3, 0.35);
-      const spin = aerialT > 0 ? Math.PI * 2 * clamp(aerialT / 1.0, 0, 1) : 0;
-      camera.rotation.set(-0.16 + Math.atan(dhz) * 0.3 - (aerialT > 0 ? 0.25 : 0), -vx * 0.018, -vx * 0.02 + Math.atan(dhx) * 0.25 + spin);
-    }
-    placeHands(dt);
+    camY += (sy - camY) * Math.min(1, dt * 4);
+    const sh = shake * 0.5 + bigAmt * 0.05;
+    camera.position.set(px * 0.6 + 1.0 + rand(-sh, sh), camY * 0.7 + 4.0 + jumpY * 0.4 + rand(-sh, sh), 8.0);
+    camera.lookAt(px * 0.8, camY * 0.6 + 1.3, -10);
 
-    spillFlash = Math.max(0, spillFlash - dt);
-    let danger = false;
-    if (playing && zoom > 0.4) for (const e of ents) if (e.kind !== 'bottle' && !e.gone && e.z > -34 && e.z < -2 && Math.abs(e.x - px) < e.r + 1.1) { danger = true; break; }
-    $('danger').hidden = !danger;
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
     if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) $('hint').classList.remove('show'); }
     if (playing) updateHUD();
@@ -1380,79 +914,55 @@ body.touch #pad {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(k)) e.preventDefault();
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
-    if ((k === 'ArrowUp' || k === 'w' || k === 'W') && !e.repeat) jump();
-    if (k === 'Enter' || k === ' ') { if (state === 'play') finishByPlayer(); else if (k === 'Enter') start(); }
+    if ((k === 'ArrowUp' || k === 'w' || k === 'W' || k === ' ') && !e.repeat) jump();
+    if (k === 'Enter' && state !== 'play') start();
   });
   addEventListener('keyup', e => {
     const k = e.key;
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
   });
-  addEventListener('blur', () => { keys.left = keys.right = false; ptr.down = false; });
+  addEventListener('blur', () => { keys.left = keys.right = false; endDrag(); });
 
-  function bindHold(id, key, onDown) {
-    const b = $(id);
-    const down = e => { e.preventDefault(); if (key) keys[key] = true; b.classList.add('on'); if (onDown) onDown(); try { b.setPointerCapture(e.pointerId); } catch (_) {} };
-    const up = () => { if (key) keys[key] = false; b.classList.remove('on'); };
-    b.addEventListener('pointerdown', down);
-    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => b.addEventListener(t, up));
-    b.addEventListener('contextmenu', e => e.preventDefault());
-  }
-  // left-hand stick: slide sideways to steer, flick up to jump
-  const stick = { id: null, x: 0, jumped: false };
-  const stEl = $('stick'), knob = $('knob');
-  function moveStick(e) {
-    const r = stEl.getBoundingClientRect();
-    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
-    const m = Math.hypot(dx, dy), RAD = 46; if (m > RAD) { dx *= RAD / m; dy *= RAD / m; }
-    knob.style.transform = `translate(${dx}px, ${dy}px)`;
-    stick.x = Math.abs(dx) < 6 ? 0 : clamp(dx / 38, -1, 1);
-    if (dy < -28 && !stick.jumped) { stick.jumped = true; jump(); }
-    if (dy > -12) stick.jumped = false;
-  }
-  stEl.addEventListener('pointerdown', e => { e.preventDefault(); stick.id = e.pointerId; try { stEl.setPointerCapture(e.pointerId); } catch (_) {} moveStick(e); });
-  stEl.addEventListener('pointermove', e => { if (e.pointerId === stick.id) moveStick(e); });
-  const endStick = e => { if (e.pointerId !== stick.id) return; stick.id = null; stick.x = 0; stick.jumped = false; knob.style.transform = ''; };
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stEl.addEventListener(t, endStick));
-  $('doneBtn').addEventListener('pointerdown', e => { e.preventDefault(); finishByPlayer(); });
-  // drag on the scene to move the brush (relative, so a finger never hides the nail)
-  const stageEl = $('stage');
+  // one finger anywhere: slide sideways to steer, flick up to jump
+  const stageEl = $('stage'), ringEl = $('touchRing'), dotEl = $('touchDot');
+  function endDrag() { drag.id = null; drag.steer = 0; ringEl.hidden = dotEl.hidden = true; }
   stageEl.addEventListener('pointerdown', e => {
-    if (state !== 'play' || ptr.down) return;
-    ptr.down = true; ptr.id = e.pointerId; ptr.x = e.clientX; ptr.y = e.clientY;
+    if (state !== 'play' || drag.id !== null) return;
+    drag.id = e.pointerId; drag.x0 = e.clientX; drag.y0 = e.clientY; drag.steer = 0; drag.jumped = false;
     try { stageEl.setPointerCapture(e.pointerId); } catch (_) {}
-    $('help').hidden = true;
+    ringEl.style.left = dotEl.style.left = e.clientX + 'px'; ringEl.style.top = dotEl.style.top = e.clientY + 'px';
+    ringEl.hidden = dotEl.hidden = false; $('help').hidden = true;
   });
   stageEl.addEventListener('pointermove', e => {
-    if (!ptr.down || e.pointerId !== ptr.id) return;
-    const sens = 1 / clamp(nailScreenScale(), 0.4, 12);
-    bx = clamp(bx + (e.clientX - ptr.x) * sens, 24, 136);
-    by = clamp(by + (e.clientY - ptr.y) * sens, 22, 176);
-    ptr.x = e.clientX; ptr.y = e.clientY;
+    if (e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+    drag.steer = Math.abs(dx) < 8 ? 0 : clamp(dx / 55, -1, 1);
+    if (dy < -45 && !drag.jumped) { drag.jumped = true; jump(); }
+    if (drag.jumped && dy > -15) drag.jumped = false;
+    if (dy < -60) drag.y0 = e.clientY + 30; // keep the anchor near the finger so you can flick again
+    dotEl.style.left = (drag.x0 + clamp(dx, -55, 55)) + 'px'; dotEl.style.top = (drag.y0 + clamp(dy, -55, 55)) + 'px';
   });
-  const ptrUp = e => { if (e.pointerId === ptr.id) { ptr.down = false; ptr.id = null; } };
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stageEl.addEventListener(t, ptrUp));
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stageEl.addEventListener(t, e => { if (e.pointerId === drag.id) endDrag(); }));
 
   function start() {
     try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
     resetGame();
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
-    $('hud').hidden = false; $('doneBtn').hidden = false; $('help').hidden = false;
-    $('help').textContent = document.body.classList.contains('touch') ? '右手で画面をドラッグしてぬる（ぬる間はズーム）' : 'マウスでドラッグしてぬる（ぬる間はズーム）';
+    $('hud').hidden = false; $('help').hidden = false;
+    $('help').textContent = document.body.classList.contains('touch') ? '指1本：左右にずらして移動・上にはじいてジャンプ' : '← → で移動 ・ ↑ か スペース でジャンプ';
     updateHUD();
-    pop('お客さんが来たよ！', '#ffffff');
+    pop('出前スタート！', '#ffffff');
   }
   $('startBtn').addEventListener('click', start);
   $('retryBtn').addEventListener('click', start);
-
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   });
 
-
-  newOrder();
+  food = FOODS[0];
   requestAnimationFrame(loop);
 })();
 </script>
