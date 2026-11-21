@@ -168,6 +168,16 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   background: #fff; border: 1.5px solid var(--ink); border-radius: 6px; padding: 1px 6px; box-shadow: 0 2px 0 var(--ink);
 }
 .small { font-size: 12.5px; font-weight: 500; margin: 0; }
+.more { text-align: left; background: #eef8fb; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.more summary { font-weight: 800; font-size: 13px; cursor: pointer; }
+.more .small { margin-top: 8px; }
+#tut {
+  position: fixed; left: 50%; bottom: 24%; transform: translateX(-50%); pointer-events: none; text-align: center;
+  padding: 10px 18px; max-width: min(86vw, 420px); box-sizing: border-box;
+}
+#tutStep { font-size: 11px; font-weight: 800; opacity: .7; }
+#tutText { font-family: var(--display); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.25; text-wrap: balance; }
+#tutSub { font-size: 12px; font-weight: 800; color: var(--coral); margin-top: 2px; }
 .btn {
   font-family: var(--display); font-size: 22px; color: #fff; background: #ff9d00;
   border: 2px solid var(--ink); border-radius: 999px; padding: 12px 18px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
@@ -208,6 +218,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 <div id="pop"></div>
 <div id="hint"></div>
 <div id="vig"></div>
+<div id="tut" class="card" hidden><div id="tutStep">れんしゅう 1 / 3</div><div id="tutText"></div><div id="tutSub"></div></div>
 <div id="mult" hidden><span id="multNum">×1.0</span><div id="multBar"><i></i></div><div id="multLbl">コンボ倍率</div></div>
 <div id="trick"></div>
 <div id="splats"></div>
@@ -229,8 +240,11 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
       <div><kbd>3</kbd><span>積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう</span></div>
     </div>
+    <p class="small">はじめての人には、遊びながら操作を教えるよ。</p>
+    <details class="more"><summary>くわしい遊び方・操作</summary>
     <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
     <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
+    </details>
     <button class="btn" id="startBtn" disabled>読み込み中…</button>
   </div>
 </div>
@@ -1256,6 +1270,7 @@ requestAnimationFrame(() => setTimeout(() => {
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
   let wipeT = 0;
+  let tut = 0, tutT = 0, tutJumped = false;      // first-run practice: 1 = steer, 2 = jump, 3 = balance the pile
   let carveCool = 0, squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
   const keys = { left: false, right: false, down: false };
   const stick = { id: null, x: 0, jumped: false, down: false, ox: 0, oy: 0, t0: 0, moved: false };
@@ -1409,6 +1424,16 @@ requestAnimationFrame(() => setTimeout(() => {
     pop(`${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} お届け！ +${pts}`, stars === 3 ? '#ffd23f' : '#fff');
     pop(usedMult > 1.05 ? `コンボ ×${usedMult.toFixed(1)}！  +6秒` : `チップ ${tip}  +6秒`, '#9ff3d0');
     sfx.order(); confetti();
+    const cu = ents.find(e => e.kind === 'cust' && e.person); if (cu) cu.joy = stars;
+    if (stars === 3) {                               // fireworks for a perfect delivery
+      const cols = [0xff4f8b, 0xffd23f, 0x3fe0a8, 0x39c6f0];
+      for (let k = 0; k < 3; k++) setTimeout(() => {
+        if (state !== 'play') return;
+        const fx = px + rand(-5, 5), fy = surfer.position.y + rand(5, 8), fz = rand(-14, -6), c = cols[k % cols.length];
+        for (let i = 0; i < 60; i++) { const a = Math.random() * 6.283, b = Math.acos(rand(-1, 1)), sp = rand(3, 6); emitFood(fx, fy, fz, Math.cos(a) * Math.sin(b) * sp, Math.cos(b) * sp, Math.sin(a) * Math.sin(b) * sp, c, rand(0.7, 1.2), 3); }
+        beep(520 + k * 140, 0.25, 'triangle', 0.06, 0.5);
+      }, 180 + k * 260);
+    }
     newLeg('pickup');
   }
   function onHit() {
@@ -1432,7 +1457,7 @@ requestAnimationFrame(() => setTimeout(() => {
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true; $('help').hidden = true;
     keys.left = keys.right = false; endStick();
-    $('gaugeWrap').hidden = true; $('pad').hidden = true; $('hud').hidden = true; $('edge').style.opacity = 0; $('trick').classList.remove('show'); slowMo = 1;
+    $('gaugeWrap').hidden = true; $('pad').hidden = true; $('hud').hidden = true; $('tut').hidden = true; $('edge').style.opacity = 0; $('trick').classList.remove('show'); slowMo = 1;
     setTimeout(() => $('retryBtn').focus(), 50);
   }
 
@@ -1498,6 +1523,23 @@ requestAnimationFrame(() => setTimeout(() => {
     spillCool = Math.max(0, spillCool - dt);
 
     if (playing) {
+      if (tut) {                                   // practice: one thing at a time, the clock waits, nothing dangerous shows up
+        const touch = document.body.classList.contains('touch');
+        const say = (n, text, sub) => { $('tutStep').textContent = `れんしゅう ${n} / 3`; if ($('tutText').textContent !== text) { $('tutText').textContent = text; $('tutSub').textContent = sub; } };
+        if (tut < 3 || phase === 'pickup') { timeLeft += dt; obsTimer = Math.max(obsTimer, 3); nextBig = Math.max(nextBig, elapsed + 8); }
+        if (tut === 1) {
+          say(1, '左右に動いてみよう', touch ? '画面の左側に指を置いて、左右にスライド' : 'A・D キー（← → でもOK）');
+          targetWait = 1; if (Math.abs(px) > 2.4) { tut = 2; sfx.good(); }
+        } else if (tut === 2) {
+          say(2, 'ジャンプしてみよう', touch ? '左の指を上にスライド、またはポンとタップ' : 'W キー（スペースでもOK）');
+          targetWait = 1; if (jumpY > 0.5) tutJumped = true; if (tutJumped && jumpY === 0) { tut = 3; sfx.good(); }
+        } else if (phase === 'pickup') {
+          say(3, 'オレンジの光のお店を通って、料理を受け取ろう', '光の輪の中を通るだけでOK');
+        } else {
+          say(3, '料理が倒れそうな方へ、右手を動かして支えよう', touch ? '画面の右側に指を置いて、黄色い矢印の方へスライド' : 'マウスを黄色い矢印の方へ動かす');
+          tutT += dt; if (tutT > 7) { tut = 0; $('tut').hidden = true; try { localStorage.setItem('surfdemae-tut', '1'); } catch (e) {} pop('れんしゅう おしまい！ お客さんへ届けよう', '#9ff3d0'); }
+        }
+      }
       elapsed += dt; timeLeft -= dt; legTime += dt;
       // waves give and take speed: you slow climbing a face and fly down the back; crouching on the way down pumps extra
       if (jumpY === 0) {
@@ -1631,11 +1673,11 @@ requestAnimationFrame(() => setTimeout(() => {
     wipeT = Math.max(0, wipeT - dt);
     const wk = wipeT > 0 ? Math.sin((1 - wipeT / 1.0) * Math.PI) : 0;
     rider.rotation.y = Math.PI * 0.02;
-    rider.rotation.z = -vx * 0.03 - wk * 1.3;
-    rider.position.x = -wk * 0.5;
+    rider.rotation.z = -vx * 0.03 - wk * 0.95;
+    rider.position.x = -wk * 0.35;
     if (wipeT > 0 && Math.random() < 0.6) emit(px + rand(-0.8, 0.8), sy + 0.2, rand(-0.5, 0.5), rand(-2, 2), rand(2, 5), rand(-1, 1));
     squat += ((crouch ? 1 : 0) - squat) * Math.min(1, dt * 12);
-    rider.scale.y = 1 - squat * 0.2; rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02 - (wipeT > 0 ? Math.sin((1 - wipeT) * Math.PI) * 0.45 : 0);
+    rider.scale.y = 1 - squat * 0.2; rider.position.y = (jumpY > 0 ? -0.12 : 0) + Math.sin(T * 3) * 0.02 - (wipeT > 0 ? Math.sin((1 - wipeT) * Math.PI) * 0.2 : 0);
     // carving throws a fan of spray off the outside rail
     if (jumpY === 0 && Math.abs(vx) > 5) for (let i = 0; i < 3; i++) emit(px - Math.sign(vx) * 0.5, sy + 0.15, rand(0.2, 1.4), -Math.sign(vx) * rand(2, 6), rand(2, 5.5), rand(0, 3));
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
@@ -1679,7 +1721,10 @@ requestAnimationFrame(() => setTimeout(() => {
         e.pillar.visible = e.z < -22 && !e.gone;
         e.mesh.visible = e.z < 4.5;   // never let a passed boat or shop fill the camera
         e.ring.scale.setScalar(1 + Math.sin(T * 6) * 0.05);
-        if (e.person) { e.person.rotation.z = Math.sin(T * 6 + e.phase) * 0.07; e.person.position.y += Math.abs(Math.sin(T * 6 + e.phase)) * 0.0 ; }
+        if (e.person) {
+          e.person.rotation.z = Math.sin(T * 6 + e.phase) * 0.07;
+          if (e.joy) { if (e.baseY === undefined) e.baseY = e.person.position.y; e.person.position.y = e.baseY + Math.abs(Math.sin(T * (e.joy === 3 ? 13 : 9))) * (e.joy === 3 ? 0.35 : 0.15); }   // jumping for joy
+        }
         if (e.boat) e.boat.rotation.z = Math.sin(T * 1.7 + e.phase) * 0.06;
         if (e.raft) e.raft.rotation.z = Math.sin(T * 1.3 + e.phase) * 0.03;
         if (e.steamAt && e.z < -4 && Math.random() < 0.5) { e.steamAt.getWorldPosition(_tw); emit(_tw.x, _tw.y + 0.5, _tw.z, rand(-0.4, 0.4), rand(1.5, 2.6), rand(-0.3, 0.3), rand(0.7, 1.2)); }
@@ -1770,7 +1815,7 @@ requestAnimationFrame(() => setTimeout(() => {
         if (avg > 1 / 27 && quality > 0) {
           quality--;
           if (quality === 1) { sunLight.castShadow = false; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25)); }
-          else { renderer.setPixelRatio(1); }
+          else { renderer.setPixelRatio(1); fMat.size = 0.13; }
           renderer.setSize(innerWidth, innerHeight);
         }
       }
@@ -1780,7 +1825,7 @@ requestAnimationFrame(() => setTimeout(() => {
     updateAmbient();
     renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     renderer.render(scene, camera);
-    if (state === 'play' && phase === 'deliver' && (quality > 0 || frameNo % 2 === 0)) {
+    if (state === 'play' && phase === 'deliver') {
       const r = $('pip').getBoundingClientRect();
       if (r.width > 0) {
         const y = innerHeight - r.bottom;
@@ -1880,6 +1925,8 @@ requestAnimationFrame(() => setTimeout(() => {
     $('hud').hidden = false; $('help').hidden = false;
     $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
     $('pad').hidden = false; trayIn = 0;
+    let seen = false; try { seen = !!localStorage.getItem('surfdemae-tut'); } catch (e) {}
+    tut = seen ? 0 : 1; tutT = 0; tutJumped = false; $('tut').hidden = tut === 0;
     updateHUD();
     pop('出前スタート！', '#ffffff');
   }
