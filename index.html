@@ -134,7 +134,13 @@ body.touch #pad {
 }
 body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(124px + env(safe-area-inset-bottom, 0px)); }
 #gaugeWrap.danger { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a, 0 0 0 4px rgba(232,52,74,.35); }
-#pip { width: 208px; height: 150px; }
+#pip { width: 208px; height: 150px; position: relative; }
+#pushL, #pushR {
+  position: absolute; top: 50%; transform: translateY(-50%); font-size: 44px; line-height: 1; color: #ffd23f;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; animation: nudge .45s ease-in-out infinite alternate;
+}
+#pushL { left: 4px; } #pushR { right: 4px; --dir: 1; }
+@keyframes nudge { from { margin-left: 0; margin-right: 0; opacity: .75; } to { margin-left: -6px; margin-right: -6px; opacity: 1; } }
 #gaugeFoot { background: var(--paper); border-top: 2px solid var(--ink); padding: 6px 10px 5px; }
 #balBar {
   position: relative; height: 10px; border-radius: 6px; border: 1.5px solid var(--ink);
@@ -167,6 +173,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   border: 2px solid var(--ink); border-radius: 999px; padding: 12px 18px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
 }
 .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.btn:disabled { background: #b9c3cc; cursor: default; }
 .btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 #rank { font-family: var(--display); font-size: 72px; line-height: 1; color: var(--sun); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); }
 .res { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; text-align: left; font-size: 15px; font-weight: 800; padding: 12px 16px; background: #eef8fb; border-radius: 10px; }
@@ -207,7 +214,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 <div id="edge"></div>
 <div id="flash"></div>
 <div id="help" hidden></div>
-<div id="gaugeWrap" class="card" hidden><div id="pip"></div><div id="gaugeFoot"><div id="balBar"><i id="balMark"></i></div><div id="gaugeTxt">トレーを水平に！</div></div></div>
+<div id="gaugeWrap" class="card" hidden><div id="pip"><span id="pushL" hidden>◀</span><span id="pushR" hidden>▶</span></div><div id="gaugeFoot"><div id="balBar"><i id="balMark"></i></div><div id="gaugeTxt">トレーを水平に！</div></div></div>
 <div id="pad" hidden>
   <div id="stick"><div id="knob"></div><span class="lab l">◀</span><span class="lab r">▶</span><span class="lab u">ジャンプ</span><span class="lab d">しゃがむ</span></div>
   <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ たおれる方へ ▶</span></div>
@@ -224,7 +231,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     </div>
     <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
     <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
-    <button class="btn" id="startBtn">スタート</button>
+    <button class="btn" id="startBtn" disabled>読み込み中…</button>
   </div>
 </div>
 
@@ -245,7 +252,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-(() => {
+requestAnimationFrame(() => setTimeout(() => {
   const $ = id => document.getElementById(id);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -792,7 +799,21 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     }
   }
   // ---------- audio ----------
-  let ac = null;
+  let ac = null, amb = null;
+  // the sea itself: a low wash of surf that swells and fades, and wind that rises with your speed
+  function startAmbient() {
+    if (!ac || amb) return;
+    const buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const mk = (type, freq, q) => { const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = ac.createGain(); g.gain.value = 0; src.connect(f); f.connect(g); g.connect(ac.destination); src.start(); return g; };
+    amb = { sea: mk('lowpass', 420, 0.4), wind: mk('bandpass', 1500, 0.7), t: 0 };
+  }
+  function updateAmbient() {
+    if (!ac || !amb) return;
+    const on = state === 'play' ? 1 : 0.35;
+    amb.sea.gain.setTargetAtTime((0.05 + 0.03 * Math.sin(T * 0.9) + bigAmt * 0.05) * on, ac.currentTime, 0.2);
+    amb.wind.gain.setTargetAtTime(clamp((speed - 16) / 22, 0, 1) * 0.035 * on + (jumpY > 1 ? 0.02 : 0), ac.currentTime, 0.2);
+  }
   function beep(f, dur, type = 'sine', vol = 0.12, slide = 1, delay = 0) {
     if (!ac) return;
     const t0 = ac.currentTime + delay;
@@ -1321,6 +1342,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     const n = rel / limitNow(), danger = Math.abs(n) > 1, warn = Math.abs(n) > 0.6;
     $('balMark').style.left = (50 + clamp(n, -1.3, 1.3) / 1.3 * 50) + '%';   // marker = which way the pile is leaning
     $('gaugeWrap').classList.toggle('danger', danger);
+    $('pushR').hidden = !(warn && rel > 0); $('pushL').hidden = !(warn && rel < 0);
     $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : warn ? (rel > 0 ? '右へ動かして →' : '← 左へ動かして') : 'いいバランス';
     $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
@@ -1410,7 +1432,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true; $('help').hidden = true;
     keys.left = keys.right = false; endStick();
-    $('gaugeWrap').hidden = true; $('pad').hidden = true;
+    $('gaugeWrap').hidden = true; $('pad').hidden = true; $('hud').hidden = true; $('edge').style.opacity = 0; $('trick').classList.remove('show'); slowMo = 1;
     setTimeout(() => $('retryBtn').focus(), 50);
   }
 
@@ -1733,16 +1755,32 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
     if (hintTimer > 0) { hintTimer -= dt; if (hintTimer <= 0) $('hint').classList.remove('show'); }
-    if (playing) updateHUD();
+    if (state === 'play') updateHUD();   // not on the frame the game ended: that would put the gauges back
   }
 
-  let last = performance.now();
+  let last = performance.now(), perfSum = 0, perfN = 0, quality = 2, frameNo = 0;
   function loop(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const raw = (now - last) / 1000; last = now;
+    const dt = Math.min(0.05, raw);
+    // if the device can't keep up, trade looks for smoothness (never the other way round mid-game)
+    if (state === 'play' && raw < 0.5) {
+      perfSum += raw; perfN++;
+      if (perfSum >= 2.5) {
+        const avg = perfSum / perfN; perfSum = 0; perfN = 0;
+        if (avg > 1 / 27 && quality > 0) {
+          quality--;
+          if (quality === 1) { sunLight.castShadow = false; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25)); }
+          else { renderer.setPixelRatio(1); }
+          renderer.setSize(innerWidth, innerHeight);
+        }
+      }
+    }
+    frameNo++;
     step(dt);
+    updateAmbient();
     renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     renderer.render(scene, camera);
-    if (state === 'play' && phase === 'deliver') {
+    if (state === 'play' && phase === 'deliver' && (quality > 0 || frameNo % 2 === 0)) {
       const r = $('pip').getBoundingClientRect();
       if (r.width > 0) {
         const y = innerHeight - r.bottom;
@@ -1835,7 +1873,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   });
 
   function start() {
-    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
+    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); startAmbient(); } catch (e) { ac = null; }
     resetGame();
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
@@ -1854,5 +1892,6 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 
   food = Object.assign({ n: 2 }, FOODS[2]);
   requestAnimationFrame(loop);
-})();
+  $('startBtn').disabled = false; $('startBtn').textContent = 'スタート';
+}, 40));
 </script>
