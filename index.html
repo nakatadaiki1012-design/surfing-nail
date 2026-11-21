@@ -151,6 +151,12 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 #gaugeTxt { font-size: 11px; font-weight: 800; margin-top: 3px; }
 @media (max-width: 420px) { #pip { width: 164px; height: 122px; } }
 
+#sys { position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); top: calc(8px + env(safe-area-inset-top, 0px)); display: flex; gap: 6px; }
+#sys button {
+  width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+  font-family: var(--display); font-size: 13px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; touch-action: none; padding: 0;
+}
+#sys button.off { background: #b9c3cc; text-decoration: line-through; }
 .overlay {
   position: fixed; inset: 0; display: grid; place-items: center;
   padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
@@ -190,7 +196,8 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 .res { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; text-align: left; font-size: 15px; font-weight: 800; padding: 12px 16px; background: #eef8fb; border-radius: 10px; }
 .res span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) {
-  #hud { gap: 6px; }
+  #sys { flex-direction: column; left: 4px; } #sys button { width: 30px; height: 30px; font-size: 11px; }
+  #hud { gap: 6px; padding-left: 38px; }
   #status { min-width: 112px; padding: 6px 8px; }
   #score { font-size: 18px; }
   #task { width: 190px; padding: 6px 10px; }
@@ -248,6 +255,15 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
     <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
     </details>
     <button class="btn" id="startBtn" disabled>読み込み中…</button>
+  </div>
+</div>
+
+<div id="sys" hidden><button id="pauseBtn" aria-label="一時停止">II</button><button id="muteBtn" aria-label="音のオン・オフ">音</button></div>
+<div id="paused" class="overlay" hidden>
+  <div class="panel card">
+    <div class="logo" style="font-size:clamp(30px,8vw,44px)">ひとやすみ</div>
+    <button class="btn" id="resumeBtn">つづける</button>
+    <button class="btn" id="restartBtn" style="background:#10a5c2">さいしょから</button>
   </div>
 </div>
 
@@ -1341,7 +1357,7 @@ requestAnimationFrame(() => setTimeout(() => {
   }
   // every stylish move feeds one combo multiplier; delivering cashes it in
   function gain(pts, inc) {
-    const got = Math.round(pts * mult * (bigAmt > 0.5 ? 2 : 1) * theme.score);
+    const got = Math.round(pts * mult * theme.score);
     score += got;
     if (inc > 0) { mult = Math.min(5, mult + inc); maxMult = Math.max(maxMult, mult); chainT = 5; const el = $('multNum'); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
     return got;
@@ -1469,14 +1485,14 @@ requestAnimationFrame(() => setTimeout(() => {
   }
   function deliver() {
     const tip = Math.max(0, Math.round(320 - legTime * 22));
-    const m = bigAmt > 0.5 ? 2 : 1;
+    const m = 1;
     const stars = stackNodes.length === food.n && legTime <= 18 ? 3 : foodLeft >= 0.6 ? 2 : 1;
     if (stars === 3) clean++;
     starsTotal += stars;
     const usedMult = mult;
-    const pts = Math.round((food.base * 0.55 * stackNodes.length + tip) * m * mult * (stars === 3 ? 1.2 : 1) * theme.score);
+    const pts = Math.round((food.base * stackNodes.length + tip) * m * mult * (stars === 3 ? 1.2 : 1) * theme.score);
     score += pts; delivered++; timeLeft += 6;
-    mult = Math.min(5, mult + (stars === 3 ? 0.5 : 0.2)); maxMult = Math.max(maxMult, mult); chainT = 6;
+    mult = Math.min(5, 1 + (mult - 1) * 0.55 + (stars === 3 ? 0.3 : 0.1)); chainT = 6;      // cashing in spends about half of it
     pop(`${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} お届け！ +${pts}`, stars === 3 ? '#ffd23f' : '#fff');
     pop(usedMult > 1.05 ? `コンボ ×${usedMult.toFixed(1)}！  +6秒` : `チップ ${tip}  +6秒`, '#9ff3d0');
     sfx.order(); confetti();
@@ -1503,8 +1519,8 @@ requestAnimationFrame(() => setTimeout(() => {
   function endGame() {
     state = 'over';
     let best = 0;
-    try { best = +localStorage.getItem('surfdemae-best2') || 0; if (score > best) { best = score; localStorage.setItem('surfdemae-best2', String(score)); } } catch (e) { best = Math.max(best, score); }
-    $('rank').textContent = score >= 14000 ? 'S' : score >= 8500 ? 'A' : score >= 4500 ? 'B' : 'C';
+    try { best = +localStorage.getItem('surfdemae-best3') || 0; if (score > best) { best = score; localStorage.setItem('surfdemae-best3', String(score)); } } catch (e) { best = Math.max(best, score); }
+    $('rank').textContent = score >= 40000 ? 'S' : score >= 28000 ? 'A' : score >= 17000 ? 'B' : 'C';
     $('rScore').textContent = score.toLocaleString();
     $('rDone').textContent = delivered + ' 回';
     $('rStars').textContent = `★ ${starsTotal}（★3は ${clean} 回）`;
@@ -1513,7 +1529,7 @@ requestAnimationFrame(() => setTimeout(() => {
     $('rBest').textContent = best.toLocaleString();
     $('over').hidden = false; $('big').hidden = true; $('help').hidden = true;
     keys.left = keys.right = false; endStick();
-    $('gaugeWrap').hidden = true; $('pad').hidden = true; $('hud').hidden = true; $('tut').hidden = true; $('edge').style.opacity = 0; $('trick').classList.remove('show'); slowMo = 1;
+    $('gaugeWrap').hidden = true; $('pad').hidden = true; $('hud').hidden = true; $('tut').hidden = true; $('sys').hidden = true; $('edge').style.opacity = 0; $('trick').classList.remove('show'); slowMo = 1;
     setTimeout(() => $('retryBtn').focus(), 50);
   }
 
@@ -1566,7 +1582,7 @@ requestAnimationFrame(() => setTimeout(() => {
         if (jolt > 0) sloshV += (Math.random() < 0.5 ? -1 : 1) * jolt * slope;
         spinA = 0; grabT = 0; grabbed = false;
         if (aerialT > 0) {
-          pop(`エアリアル成功！ +${gain(Math.round(400 * carry), 0.6)}`, '#ffd23f'); sfx.order(); aerialT = 0; boost = Math.min(9, boost + 4);
+          pop(`エアリアル成功！ +${gain(Math.round(180 * carry), 0.25)}`, '#ffd23f'); sfx.order(); aerialT = 0; boost = Math.min(9, boost + 4);
           sloshV += (Math.random() < 0.5 ? -1 : 1) * 2.6;   // a big slosh you can still catch
         } else sloshV += (Math.random() < 0.5 ? -1 : 1) * (0.7 + Math.min(airMax, 3) * 0.7) * slope;
         jumpY = 0; vy = 0; landJolt = 0.5;
@@ -1618,7 +1634,7 @@ requestAnimationFrame(() => setTimeout(() => {
           if (!g.done && g.z >= -0.6) {            // this crest is under the board right now: what did the surfer do?
             g.done = true;
             const tall = g.hMax > 5 ? 1.5 : 1;
-            if (jumpY > 0.2 && g.just) { pop(`ジャスト！ 大ジャンプ +${gain(600 * tall, 1.0)}`, '#ffd23f'); aerialT = 0.001; sfx.perfect(); }
+            if (jumpY > 0.2 && g.just) { pop(`ジャスト！ 大ジャンプ +${gain(260 * tall, 0.4)}`, '#ffd23f'); aerialT = 0.001; sfx.perfect(); }
             else if (jumpY <= 0.2 && crouch) { toast(`吸収！ パンピング +${gain(150 * tall, 0.3)}`); boost = Math.min(10, boost + 4); sloshV += (Math.random() < 0.5 ? -1 : 1) * 0.35; sfx.good(); }
             else if (jumpY <= 0.2) { vy = 6.5 + g.hMax * 0.45; jumpY = 0.02; airMax = 0; pop(`波に飛ばされた！ +${gain(80 * tall, 0)}`, '#ffd0dc'); beep(520, 0.25, 'triangle', 0.08, 1.6); }
             else { toast(`とびこえ +${gain(150, 0.2)}`); }
@@ -1638,15 +1654,15 @@ requestAnimationFrame(() => setTimeout(() => {
         $('big').hidden = false; beep(110, 0.9, 'sawtooth', 0.08, 2.2);
       }
       if (px < WALL_X && jumpY === 0) {
-        rideAcc += dt * 40 * mult * (bigAmt > 0.5 ? 2 : 1);
+        rideAcc += dt * 40 * mult;
         if (rideAcc >= 1) { score += Math.floor(rideAcc); rideAcc -= Math.floor(rideAcc); }
-        mult = Math.min(5, mult + dt * 0.12); maxMult = Math.max(maxMult, mult); chainT = 5;
+        mult = Math.min(5, mult + dt * 0.07); maxMult = Math.max(maxMult, mult); chainT = 5;
         boost += (8 - boost) * Math.min(1, dt * 0.9);      // the wave face is where the speed is
       } else boost = Math.max(0, boost - dt * 1.3);
       {
         // combo timer runs down; carrying the food steadily keeps feeding it
-        chainT -= dt; if (chainT <= 0 && mult > 1) mult = Math.max(1, mult - dt * 0.5);
-        if (phase === 'deliver' && jumpY === 0 && Math.abs(rel) < limitNow() * 0.5) { balT += dt; if (balT >= 4) { balT = 0; toast(`ナイスバランス +${gain(40, 0.15)}`); } } else balT = Math.max(0, balT - dt * 2);
+        chainT -= dt; if (mult > 1) mult = Math.max(1, mult - dt * (chainT <= 0 ? 0.5 : 0.035));   // it always leaks a little: keep doing things
+        if (phase === 'deliver' && jumpY === 0 && Math.abs(rel) < limitNow() * 0.5) { balT += dt; if (balT >= 4) { balT = 0; toast(`ナイスバランス +${gain(40, 0.05)}`); } } else balT = Math.max(0, balT - dt * 2);
         // cutback: a hard carve one way, then straight back the other
         carveT += dt; carveCool -= dt;
         if (jumpY === 0 && Math.abs(vx) > 7) {
@@ -1677,7 +1693,7 @@ requestAnimationFrame(() => setTimeout(() => {
     let brink = 0;
     if (playing && phase === 'deliver' && stackNodes.length) {
       const n = stackNodes.length, steady = crouch ? 0.6 : 1;
-      const ease = orderIdx <= 3 ? 0.8 : 1;                                          // the first few orders are a warm-up
+      const ease = orderIdx <= 3 ? 0.8 : Math.min(1.35, 1 + (orderIdx - 4) * 0.07);   // a warm-up first, then every order is a little harder than the last
       const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady * ease;
       const nn = Math.abs(lean) / LEAN_MAX;
       const hang = 1 - 0.45 * clamp((nn - 0.7) / 0.3, 0, 1);                          // near the brink the pile hesitates
@@ -1802,8 +1818,8 @@ requestAnimationFrame(() => setTimeout(() => {
       if (playing && !e.gone && Math.abs(e.z) < 1.3 && Math.abs(e.x - px) < e.r + 0.45) {
         if (e.kind === 'coin') {
           if (Math.abs(jumpY + 1 - e.yOff) < 1.6) {
-            e.gone = true; gain(10, 0.04); beep(1320, 0.08, 'triangle', 0.06);
-            const rw = rows[e.row]; if (rw && ++rw.got === 6) { toast(`コインぜんぶ！ +${gain(100, 0.3)}`); sfx.pick(); }
+            e.gone = true; gain(10, 0.015); beep(1320, 0.08, 'triangle', 0.06);
+            const rw = rows[e.row]; if (rw && ++rw.got === 6) { toast(`コインぜんぶ！ +${gain(100, 0.2)}`); sfx.pick(); }
           }
         }
         else if (invuln <= 0 && jumpY < 0.9) { e.gone = true; onHit(); }
@@ -1881,7 +1897,7 @@ requestAnimationFrame(() => setTimeout(() => {
       }
     }
     frameNo++;
-    step(dt);
+    if (state !== 'pause') step(dt);
     updateAmbient();
     renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     renderer.render(scene, camera);
@@ -1906,7 +1922,8 @@ requestAnimationFrame(() => setTimeout(() => {
     if (k === 'ArrowDown' || k === 's' || k === 'S') keys.down = true;
     if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
     if ((k === 'ArrowUp' || k === 'w' || k === 'W' || k === ' ') && !e.repeat) jump();
-    if (k === 'Enter' && state !== 'play') start();
+    if (k === 'Enter' && (state === 'title' || state === 'over')) start();
+    if ((k === 'Escape' || k === 'p' || k === 'P') && !e.repeat) togglePause();
   });
   addEventListener('keyup', e => {
     const k = e.key;
@@ -1970,7 +1987,25 @@ requestAnimationFrame(() => setTimeout(() => {
   }));
   addEventListener('pointermove', e => { if (e.pointerId === stick.id) moveStick(e); else if (e.pointerId === tiltId) moveTilt(e); });
   ['touchstart', 'touchmove', 'gesturestart', 'gesturechange', 'contextmenu', 'dblclick'].forEach(t =>
-    document.addEventListener(t, e => { if (state === 'play') e.preventDefault(); }, { passive: false }));
+    document.addEventListener(t, e => { if (state === 'play' && !(e.target.closest && e.target.closest('#sys'))) e.preventDefault(); }, { passive: false }));
+  // pause (also when the tab is hidden) and a sound switch
+  let muted = false;
+  function togglePause(force) {
+    if (state !== 'play' && state !== 'pause') return;
+    const p = force === undefined ? state === 'play' : force;
+    state = p ? 'pause' : 'play';
+    $('paused').hidden = !p; keys.left = keys.right = keys.down = false; endStick(); endTilt();
+    try { if (ac) { if (p || muted) ac.suspend(); else ac.resume(); } } catch (e) {}
+    if (!p) last = performance.now();
+  }
+  $('pauseBtn').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); togglePause(); });
+  $('muteBtn').addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); muted = !muted; $('muteBtn').classList.toggle('off', muted);
+    try { if (ac) { if (muted) ac.suspend(); else if (state === 'play') ac.resume(); } } catch (err) {}
+  });
+  $('resumeBtn').addEventListener('click', () => togglePause(false));
+  $('restartBtn').addEventListener('click', () => { state = 'over'; start(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) togglePause(true); });
   // on a computer the mouse does the right hand's job
   addEventListener('mousemove', e => {
     if (document.body.classList.contains('touch') || state !== 'play') return;
@@ -1978,11 +2013,11 @@ requestAnimationFrame(() => setTimeout(() => {
   });
 
   function start() {
-    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); startAmbient(); } catch (e) { ac = null; }
+    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended' && !muted) ac.resume(); startAmbient(); } catch (e) { ac = null; }
     resetGame();
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
-    $('hud').hidden = false; $('help').hidden = false;
+    $('hud').hidden = false; $('help').hidden = false; $('sys').hidden = false; $('paused').hidden = true;
     $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
     $('pad').hidden = false; trayIn = 0;
     let seen = false; try { seen = !!localStorage.getItem('surfdemae-tut'); } catch (e) {}
