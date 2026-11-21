@@ -75,6 +75,7 @@ body {
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
 #big small { font-size: .55em; color: #fff; }
+#bolt { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: #eaf2ff; }
 #edge { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 0 6px rgba(255, 60, 90, .8), inset 0 0 90px 20px rgba(255, 40, 80, .55); }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
 #mult {
@@ -222,6 +223,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 <div id="mult" hidden><span id="multNum">×1.0</span><div id="multBar"><i></i></div><div id="multLbl">コンボ倍率</div></div>
 <div id="trick"></div>
 <div id="splats"></div>
+<div id="bolt"></div>
 <div id="edge"></div>
 <div id="flash"></div>
 <div id="help" hidden></div>
@@ -304,7 +306,7 @@ requestAnimationFrame(() => setTimeout(() => {
 
   scene.fog = new THREE.Fog(0xcdeef7, 55, 190);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x2a8fb0, 0.42));
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x2a8fb0, 0.42); scene.add(hemiLight);
   const sunLight = new THREE.DirectionalLight(0xfff1d6, 1.15);
   sunLight.position.set(12, 22, -24); scene.add(sunLight); scene.add(sunLight.target);
   // real shadows from the sun, in a small box that follows the surfer
@@ -319,23 +321,39 @@ requestAnimationFrame(() => setTimeout(() => {
   sunDisc.position.copy(SUN_POS); scene.add(sunDisc);
   const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex, color: 0xffe9a8, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
   sunGlow.scale.set(150, 150, 1); sunGlow.position.copy(SUN_POS); scene.add(sunGlow);
-  const skyTex = (() => {
-    const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const g = c.getContext('2d');
+  // three seas: each one repaints the sky, relights the scene and recolours the water
+  const THEMES = [
+    { id: 'day', name: '晴れの海', note: '', sky: ['#1450b0', '#2b7bdb', '#58a8ea', '#a6d9f5', '#d8eff6'], sea: ['#cdeef7', '#2a93ad', '#0d5f7c'], fog: 0xcdeef7, fogN: 55, fogF: 190,
+      sun: [60, 42, -380], sunCol: 0xfff6cf, sunShow: true, halo: '255,244,214', haloK: 1, light: [0xfff1d6, 1.15], hemi: [0xffffff, 0x2a8fb0, 0.42], fill: [0xbfe8ff, 0.45],
+      deep: [0.01, 0.30, 0.50], shallow: [0.06, 0.70, 0.78], skyH: [0.84, 0.94, 0.97], skyZ: [0.20, 0.50, 0.86], glint: [1.0, 0.93, 0.78], cloud: 0xffffff, rough: 1, score: 1, rain: false },
+    { id: 'sunset', name: '夕焼けの海', note: 'おだやかな波', sky: ['#1b2566', '#4f4494', '#c9608c', '#ff9558', '#ffd08a'], sea: ['#ffc79a', '#7a5a7a', '#2a2f55'], fog: 0xf4c4a0, fogN: 55, fogF: 190,
+      sun: [30, 14, -380], sunCol: 0xffb060, sunShow: true, halo: '255,170,90', haloK: 1.7, light: [0xffa666, 1.2], hemi: [0xffd2b0, 0x3a3560, 0.42], fill: [0xc8a0ff, 0.35],
+      deep: [0.05, 0.13, 0.30], shallow: [0.30, 0.36, 0.52], skyH: [1.0, 0.74, 0.48], skyZ: [0.30, 0.26, 0.55], glint: [1.6, 1.0, 0.48], cloud: 0xffc8a8, rough: 0.85, score: 1, rain: false },
+    { id: 'storm', name: '嵐の海', note: 'ゆれやすい！ 得点1.3倍', sky: ['#222b37', '#384554', '#536271', '#788692', '#93a1ab'], sea: ['#93a1ab', '#33525c', '#17323c'], fog: 0x93a1ab, fogN: 40, fogF: 150,
+      sun: [60, 42, -380], sunCol: 0x93a1ab, sunShow: false, halo: '200,210,220', haloK: 0.3, light: [0xcfd8e0, 0.8], hemi: [0xbac6d0, 0x24404a, 0.55], fill: [0x9fb4c4, 0.35],
+      deep: [0.03, 0.17, 0.24], shallow: [0.14, 0.40, 0.44], skyH: [0.60, 0.67, 0.71], skyZ: [0.22, 0.28, 0.34], glint: [0.2, 0.22, 0.24], cloud: 0x5d6a76, rough: 1.5, score: 1.3, rain: true },
+  ];
+  let theme = THEMES[0];
+  const skyCv = document.createElement('canvas'); skyCv.width = 1024; skyCv.height = 512;
+  let skyTex = null;
+  function paintSky(th) {
+    const g = skyCv.getContext('2d'); g.filter = 'none';
     let gr = g.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, '#1450b0'); gr.addColorStop(0.6, '#2b7bdb'); gr.addColorStop(0.86, '#58a8ea'); gr.addColorStop(0.96, '#a6d9f5'); gr.addColorStop(1, '#d8eff6');
+    [0, 0.6, 0.86, 0.96, 1].forEach((st, i) => gr.addColorStop(st, th.sky[i]));
     g.fillStyle = gr; g.fillRect(0, 0, 1024, 256);
-    gr = g.createLinearGradient(0, 256, 0, 512); gr.addColorStop(0, '#cdeef7'); gr.addColorStop(0.25, '#2a93ad'); gr.addColorStop(1, '#0d5f7c');
+    gr = g.createLinearGradient(0, 256, 0, 512); gr.addColorStop(0, th.sea[0]); gr.addColorStop(0.25, th.sea[1]); gr.addColorStop(1, th.sea[2]);
     g.fillStyle = gr; g.fillRect(0, 256, 1024, 256);
-    // sun halo at the sun's direction
     const d = SUN_POS.clone().normalize(), su = (Math.atan2(d.z, d.x) / (Math.PI * 2) + 0.5) * 1024, sv = (0.5 - Math.asin(d.y) / Math.PI) * 512;
-    [[170, 0.2], [70, 0.4], [28, 0.9]].forEach(([r, a]) => { const h = g.createRadialGradient(su, sv, 0, su, sv, r); h.addColorStop(0, `rgba(255,244,214,${a})`); h.addColorStop(1, 'rgba(255,244,214,0)'); g.fillStyle = h; g.fillRect(su - r, sv - r, r * 2, r * 2); });
-    // thin high cloud streaks
+    [[170 * th.haloK, 0.2], [70 * th.haloK, 0.4], [28, 0.9 * Math.min(1, th.haloK)]].forEach(([r, a]) => { const h = g.createRadialGradient(su, sv, 0, su, sv, r); h.addColorStop(0, `rgba(${th.halo},${a})`); h.addColorStop(1, `rgba(${th.halo},0)`); g.fillStyle = h; g.fillRect(su - r, sv - r, r * 2, r * 2); });
     g.filter = 'blur(6px)';
-    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${0.06 + Math.random() * 0.12})`; g.beginPath(); g.ellipse(Math.random() * 1024, 150 + Math.random() * 90, 40 + Math.random() * 90, 3 + Math.random() * 6, 0, 0, 7); g.fill(); }
-    const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; return t;
-  })();
-  scene.background = skyTex;
-  try { const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(skyTex).texture; pm.dispose(); } catch (e) { /* reflections are a nicety */ }
+    const streak = th.id === 'storm' ? '40,48,58' : th.id === 'sunset' ? '255,190,150' : '255,255,255';
+    for (let i = 0; i < (th.id === 'storm' ? 110 : 40); i++) { g.fillStyle = `rgba(${streak},${0.06 + Math.random() * (th.id === 'storm' ? 0.3 : 0.12)})`; g.beginPath(); g.ellipse(Math.random() * 1024, (th.id === 'storm' ? 60 : 150) + Math.random() * (th.id === 'storm' ? 190 : 90), 40 + Math.random() * 90, 3 + Math.random() * (th.id === 'storm' ? 16 : 6), 0, 0, 7); g.fill(); }
+    // a fresh texture each time: the renderer keeps its own copy of a sky it has already seen
+    if (skyTex) skyTex.dispose();
+    skyTex = new THREE.CanvasTexture(skyCv); skyTex.mapping = THREE.EquirectangularReflectionMapping;
+    scene.background = skyTex;
+  }
+  let envRT = null;
 
   // puffy clouds
   const cloudTex = (() => {
@@ -386,6 +404,8 @@ requestAnimationFrame(() => setTimeout(() => {
   const oceanU = {
     uTime: { value: 0 }, uDist: { value: 0 }, uBig: { value: 0 }, uRZ: { value: new THREE.Vector3(-999, -999, -999) }, uRH: { value: new THREE.Vector3(0, 0, 0) },
     uSun: { value: SUN_POS.clone().normalize() },
+    uDeep: { value: new THREE.Vector3(0.01, 0.30, 0.50) }, uShallow: { value: new THREE.Vector3(0.06, 0.70, 0.78) },
+    uSkyH: { value: new THREE.Vector3(0.84, 0.94, 0.97) }, uSkyZ: { value: new THREE.Vector3(0.20, 0.50, 0.86) }, uGlint: { value: new THREE.Vector3(1.0, 0.93, 0.78) },
     uFogC: { value: new THREE.Color(0xcdeef7) }, uFogN: { value: 55 }, uFogF: { value: 190 },
   };
   const WAVE_GLSL = `
@@ -420,7 +440,7 @@ requestAnimationFrame(() => setTimeout(() => {
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: `
-      uniform float uTime, uDist; uniform vec3 uSun, uFogC; uniform float uFogN, uFogF;
+      uniform float uTime, uDist; uniform vec3 uSun, uFogC, uDeep, uShallow, uSkyH, uSkyZ, uGlint; uniform float uFogN, uFogF;
       varying vec3 vW; varying vec3 vN; varying float vH; varying float vWall; varying float vBase; varying float vRidge; varying float vCrest;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float noise(vec2 p) {
@@ -436,7 +456,7 @@ requestAnimationFrame(() => setTimeout(() => {
         vec3 N = normalize(vN + (vec3(n1 - 0.5, 0.0, n2 - 0.5) * 0.45 + vec3(n3 - 0.5, 0.0, n4 - 0.5) * 0.22) * (1.0 - far * 0.8));
         vec3 V = normalize(cameraPosition - vW);
         float fres = 0.03 + 0.97 * pow(1.0 - max(dot(N, V), 0.0), 4.0);
-        vec3 deep = vec3(0.01, 0.30, 0.50), shallow = vec3(0.06, 0.70, 0.78);
+        vec3 deep = uDeep, shallow = uShallow;
         vec3 col = mix(deep, shallow, clamp((vBase + 0.7) / 2.0, 0.0, 1.0));
         col += vec3(0.05, 0.42, 0.36) * pow(clamp(vBase / 3.2, 0.0, 1.0), 1.5) * 0.9;   // sunlight glowing through tall water
         float wf = clamp(vWall / 9.0, 0.0, 1.0);
@@ -445,9 +465,9 @@ requestAnimationFrame(() => setTimeout(() => {
         col *= 0.78 + 0.32 * clamp(dot(N, uSun), 0.0, 1.0);
         // mirror the sky: pale at the horizon, deep blue overhead, with the sun's glitter path
         vec3 Rf = reflect(-V, N); Rf.y = abs(Rf.y);
-        vec3 skyR = mix(vec3(0.84, 0.94, 0.97), vec3(0.20, 0.50, 0.86), pow(clamp(Rf.y, 0.0, 1.0), 0.5));
+        vec3 skyR = mix(uSkyH, uSkyZ, pow(clamp(Rf.y, 0.0, 1.0), 0.5));
         float sd = max(dot(Rf, uSun), 0.0);
-        skyR += vec3(1.0, 0.93, 0.78) * (pow(sd, 420.0) * 5.0 + pow(sd, 28.0) * 0.35);
+        skyR += uGlint * (pow(sd, 420.0) * 5.0 + pow(sd, 28.0) * 0.35);
         col = mix(col, skyR, clamp(fres, 0.0, 0.8));
         float fn = noise(uv * 2.6 + vec2(0.0, uTime * 0.4));
         float foam = smoothstep(0.85, 1.4, vBase - vRidge + fn * 0.55);
@@ -535,7 +555,8 @@ requestAnimationFrame(() => setTimeout(() => {
       else d.g.visible = false;
       if (up !== d.wasUp) { for (let i = 0; i < 14; i++) emit(d.x + rand(-0.4, 0.4), waveH(d.x, d.z) + 0.2, d.z - (up ? 0 : 5), rand(-2, 2), rand(2, 5), rand(-1, 1)); d.wasUp = up; }
     }
-    rainbow.children.forEach(m => { m.material.opacity += (bigAmt * 0.42 - m.material.opacity) * Math.min(1, dt * 2); });
+    rainbow.children.forEach(m => { m.material.opacity += ((theme.id === 'day' ? bigAmt * 0.42 : 0) - m.material.opacity) * Math.min(1, dt * 2); });
+    updateRain(dt, px);
     if (onWater) for (let k = 0; k < 2; k++) { const w = wParts[wIdx]; wIdx = (wIdx + 1) % WN; w.life = 1.5; w.x = px + rand(-0.35, 0.35); w.z = 1.5; w.vx = rand(-0.9, 0.9); }
     for (let i = 0; i < WN; i++) {
       const w = wParts[i];
@@ -546,6 +567,41 @@ requestAnimationFrame(() => setTimeout(() => {
     // spray blowing off the top of the wave on the left
     for (let k = 0; k < 2; k++) { const z = rand(-80, 6), x = -20.3 + rand(-0.6, 0.6); emit(x, waveH(x, z) + 0.2, z, rand(0.5, 3), rand(1.5, 5), rand(-1, 1), rand(0.5, 1.1)); }
   }
+
+  // rain streaks that travel with the camera (storm only)
+  const RN = 380, rainPos = new Float32Array(RN * 6), rainGeo = new THREE.BufferGeometry();
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  const rainDrops = Array.from({ length: RN }, () => ({ x: rand(-26, 26), y: rand(0, 22), z: rand(-48, 9) }));
+  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xd4e2ec, transparent: true, opacity: 0.55, fog: false }));
+  rain.frustumCulled = false; rain.visible = false; scene.add(rain);
+  function updateRain(dt, cx) {
+    if (!rain.visible) return;
+    for (let i = 0; i < RN; i++) {
+      const d = rainDrops[i];
+      d.y -= 42 * dt; d.x += 9 * dt; d.z += 6 * dt;
+      if (d.y < -1) { d.y = 22; d.x = cx + rand(-26, 26); d.z = rand(-48, 9); }
+      rainPos.set([d.x, d.y, d.z, d.x - 0.28, d.y + 1.3, d.z - 0.18], i * 6);
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+  }
+  function applyTheme(th) {
+    theme = th;
+    SUN_POS.set(...th.sun);
+    paintSky(th);
+    try { const pm = new THREE.PMREMGenerator(renderer); const rt = pm.fromEquirectangular(skyTex); if (envRT) envRT.dispose(); envRT = rt; scene.environment = rt.texture; pm.dispose(); } catch (e) { /* reflections are a nicety */ }
+    scene.fog.color.set(th.fog); scene.fog.near = th.fogN; scene.fog.far = th.fogF;
+    oceanU.uFogC.value.set(th.fog); oceanU.uFogN.value = th.fogN; oceanU.uFogF.value = th.fogF;
+    oceanU.uSun.value.copy(SUN_POS).normalize();
+    oceanU.uDeep.value.set(...th.deep); oceanU.uShallow.value.set(...th.shallow); oceanU.uSkyH.value.set(...th.skyH); oceanU.uSkyZ.value.set(...th.skyZ); oceanU.uGlint.value.set(...th.glint);
+    sunDisc.position.copy(SUN_POS); sunGlow.position.copy(SUN_POS); sunDisc.material.color.set(th.sunCol); sunGlow.material.color.set(th.sunCol);
+    sunDisc.visible = sunGlow.visible = th.sunShow; sunGlow.scale.setScalar(150 * th.haloK);
+    sunLight.color.set(th.light[0]); sunLight.intensity = th.light[1];
+    hemiLight.color.set(th.hemi[0]); hemiLight.groundColor.set(th.hemi[1]); hemiLight.intensity = th.hemi[2];
+    fillLight.color.set(th.fill[0]); fillLight.intensity = th.fill[1];
+    clouds.forEach(c => { c.material.color.set(th.cloud); });
+    rain.visible = th.rain;
+  }
+  applyTheme(THEMES[0]);
 
   // soft shadow under the board
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 4.2), new THREE.MeshBasicMaterial({
@@ -1269,7 +1325,7 @@ requestAnimationFrame(() => setTimeout(() => {
   const LEAN_MAX = 0.6;
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
-  let wipeT = 0;
+  let wipeT = 0, runCount = 0, boltT = 6;
   let tut = 0, tutT = 0, tutJumped = false;      // first-run practice: 1 = steer, 2 = jump, 3 = balance the pile
   let carveCool = 0, squat = 0, pumping = false, carveSign = 0, carveT = 9, dangerT = 9, dangerArmed = false;
   const keys = { left: false, right: false, down: false };
@@ -1285,7 +1341,7 @@ requestAnimationFrame(() => setTimeout(() => {
   }
   // every stylish move feeds one combo multiplier; delivering cashes it in
   function gain(pts, inc) {
-    const got = Math.round(pts * mult * (bigAmt > 0.5 ? 2 : 1));
+    const got = Math.round(pts * mult * (bigAmt > 0.5 ? 2 : 1) * theme.score);
     score += got;
     if (inc > 0) { mult = Math.min(5, mult + inc); maxMult = Math.max(maxMult, mult); chainT = 5; const el = $('multNum'); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
     return got;
@@ -1418,7 +1474,7 @@ requestAnimationFrame(() => setTimeout(() => {
     if (stars === 3) clean++;
     starsTotal += stars;
     const usedMult = mult;
-    const pts = Math.round((food.base * 0.55 * stackNodes.length + tip) * m * mult * (stars === 3 ? 1.2 : 1));
+    const pts = Math.round((food.base * 0.55 * stackNodes.length + tip) * m * mult * (stars === 3 ? 1.2 : 1) * theme.score);
     score += pts; delivered++; timeLeft += 6;
     mult = Math.min(5, mult + (stars === 3 ? 0.5 : 0.2)); maxMult = Math.max(maxMult, mult); chainT = 6;
     pop(`${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} お届け！ +${pts}`, stars === 3 ? '#ffd23f' : '#fff');
@@ -1521,6 +1577,10 @@ requestAnimationFrame(() => setTimeout(() => {
     surfVel = (waveH(px, 0) - prevSurf) / Math.max(dt, 1e-3); prevSurf = waveH(px, 0);
     landJolt = Math.max(0, landJolt - dt * 1.5);
     spillCool = Math.max(0, spillCool - dt);
+    if (playing && theme.rain) {                     // lightning
+      boltT -= dt;
+      if (boltT <= 0) { boltT = rand(6, 12); const bl = $('bolt'); bl.style.transition = 'none'; bl.style.opacity = 0.55; requestAnimationFrame(() => { bl.style.transition = 'opacity .7s'; bl.style.opacity = 0; }); beep(55, 1.1, 'sawtooth', 0.12, 0.6, 0.25); beep(90, 0.5, 'square', 0.05, 0.4, 0.3); }
+    }
 
     if (playing) {
       if (tut) {                                   // practice: one thing at a time, the clock waits, nothing dangerous shows up
@@ -1623,12 +1683,12 @@ requestAnimationFrame(() => setTimeout(() => {
       const hang = 1 - 0.45 * clamp((nn - 0.7) / 0.3, 0, 1);                          // near the brink the pile hesitates
       const A = food.tip * (1 + 0.12 * (n - 2)) * steady * ease * hang;
       const roll = -Math.atan(waveH(px + 0.5, 0) - waveH(px - 0.5, 0)) * 0.5;       // the board's own lean (big on the wave face)
-      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.14 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0));
+      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.14 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0)) * theme.rough;
       leanV += sloshV * 0.42; sloshV = 0;                                            // jolts from tricks, landings and near misses
       leanV += (A * (lean + roll * 0.6 - trayA * 0.8) - clamp(ax, -90, 90) * 0.016 * sens + chop * sens - leanV * 1.1) * dt;
       // the sea never lets it settle: the calmer the pile, the sooner the next shove, and it pushes toward the brink
       gustT -= dt * (nn < 0.25 ? 2.2 : nn < 0.5 ? 1 : 0.4);
-      if (gustT <= 0) { gustT = rand(2.6, 4.6); leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.3, 0.52) * sens; }
+      if (gustT <= 0) { gustT = rand(2.6, 4.6) / theme.rough; leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.3, 0.52) * sens; }
       lean += leanV * dt; graceT -= dt;
       // past the limit it teeters for a moment before the top dish actually goes
       if (Math.abs(lean) > LEAN_MAX && graceT <= 0) teeterT += dt; else teeterT = Math.max(0, teeterT - dt * 2);
@@ -1928,7 +1988,9 @@ requestAnimationFrame(() => setTimeout(() => {
     let seen = false; try { seen = !!localStorage.getItem('surfdemae-tut'); } catch (e) {}
     tut = seen ? 0 : 1; tutT = 0; tutJumped = false; $('tut').hidden = tut === 0;
     updateHUD();
-    pop('出前スタート！', '#ffffff');
+    let runs = 0; try { runs = +localStorage.getItem('surfdemae-runs') || 0; localStorage.setItem('surfdemae-runs', String(runs + 1)); } catch (e) { runs = runCount++; }
+    applyTheme(THEMES[runs % THEMES.length]); boltT = rand(4, 8);
+    pop(theme.note ? `${theme.name}：${theme.note}` : '出前スタート！', '#ffffff');
   }
   $('startBtn').addEventListener('click', start);
   $('retryBtn').addEventListener('click', start);
