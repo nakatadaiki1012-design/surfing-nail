@@ -64,8 +64,8 @@ body {
 }
 #pop.show { opacity: 1; transform: translate(-50%, -60%); }
 #hint {
-  position: fixed; left: 50%; top: calc(182px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
-  background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+  position: fixed; left: 50%; top: calc(var(--hudB, 110px) + 8px); transform: translateX(-50%);
+  background: rgba(21, 48, 74, .82); color: #fff; font-weight: 800; font-size: 12px; padding: 5px 12px; border-radius: 999px;
   opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap;
 }
 #hint.show { opacity: .92; }
@@ -78,16 +78,11 @@ body {
 #bolt { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: #eaf2ff; }
 #edge { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 0 6px rgba(255, 60, 90, .8), inset 0 0 90px 20px rgba(255, 40, 80, .55); }
 #flash { position: fixed; inset: 0; background: #ff2a55; opacity: 0; pointer-events: none; transition: opacity .3s; }
-#mult {
-  position: fixed; left: 50%; top: calc(128px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); pointer-events: none; text-align: center;
-  font-family: var(--display); color: var(--sun); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink);
-}
-#multNum { font-size: 30px; line-height: 1; display: inline-block; }
+#multNum { font-family: var(--display); font-size: 17px; line-height: 1; display: inline-block; color: var(--coral); }
 #multNum.bump { animation: bump .3s ease-out; }
 @keyframes bump { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
-#multBar { width: 110px; height: 7px; margin: 3px auto 0; border-radius: 5px; border: 1.5px solid var(--ink); background: rgba(255,255,255,.5); overflow: hidden; }
-#multBar > i { display: block; height: 100%; background: var(--sun); }
-#multLbl { font-family: var(--body); font-weight: 800; font-size: 10px; color: #fff; -webkit-text-stroke: 0; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+#multBar { height: 5px; margin-top: 2px; border-radius: 4px; background: #e7eef3; overflow: hidden; }
+#multBar > i { display: block; height: 100%; background: var(--coral); }
 #trick {
   position: fixed; left: 50%; top: 58%; transform: translate(-50%, 0); pointer-events: none; white-space: nowrap;
   font-family: var(--display); font-size: clamp(15px, 3.6vw, 22px); color: #9ff3d0; -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill;
@@ -130,12 +125,11 @@ body.touch #pad {
 #tiltPad .t { left: 50%; top: -18px; transform: translateX(-50%); }
 /* close-up window: a second camera looks at the tray; the 3D scene shows through the transparent top part */
 #gaugeWrap {
-  position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(8px + env(safe-area-inset-top, 0px));
   background: transparent; overflow: hidden; pointer-events: none; text-align: center;
 }
-body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(124px + env(safe-area-inset-bottom, 0px)); }
 #gaugeWrap.danger { border-color: #e8344a; box-shadow: 0 4px 0 #e8344a, 0 0 0 4px rgba(232,52,74,.35); }
-#pip { width: 208px; height: 150px; position: relative; }
+#pip { width: 200px; height: 136px; position: relative; }
 #pushL, #pushR {
   position: absolute; top: 50%; transform: translateY(-50%); font-size: 44px; line-height: 1; color: #ffd23f;
   -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; animation: nudge .45s ease-in-out infinite alternate;
@@ -149,7 +143,15 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 }
 #balMark { position: absolute; top: -5px; left: 50%; width: 6px; height: 18px; margin-left: -3px; background: var(--ink); border: 1.5px solid #fff; border-radius: 3px; box-sizing: border-box; }
 #gaugeTxt { font-size: 11px; font-weight: 800; margin-top: 3px; }
-@media (max-width: 420px) { #pip { width: 164px; height: 122px; } }
+/* not enough room beside the HUD: the close-up drops just under it on the right, instructions sit to its left */
+@media (max-width: 900px) {
+  #pop { top: 49%; font-size: clamp(18px, 5vw, 30px); }
+  #gaugeWrap { top: calc(var(--hudB, 110px) + 8px); right: max(8px, env(safe-area-inset-right, 0px)); }
+  #pip { width: 150px; height: 104px; }
+  #pushL, #pushR { font-size: 32px; }
+  #gaugeFoot { padding: 4px 8px 3px; }
+  #hint, #tut { left: max(8px, env(safe-area-inset-left, 0px)); transform: none; max-width: calc(100vw - 186px); white-space: normal; text-align: left; }
+}
 
 #sys { position: fixed; left: max(8px, env(safe-area-inset-left, 0px)); top: calc(8px + env(safe-area-inset-top, 0px)); display: flex; gap: 6px; }
 #sys button {
@@ -179,12 +181,12 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 .more summary { font-weight: 800; font-size: 13px; cursor: pointer; }
 .more .small { margin-top: 8px; }
 #tut {
-  position: fixed; left: 50%; bottom: 24%; transform: translateX(-50%); pointer-events: none; text-align: center;
-  padding: 10px 18px; max-width: min(86vw, 420px); box-sizing: border-box;
+  position: fixed; left: 50%; top: calc(var(--hudB, 110px) + 8px); transform: translateX(-50%); pointer-events: none; text-align: center;
+  padding: 6px 14px; max-width: min(70vw, 380px); box-sizing: border-box; background: rgba(255, 250, 244, .9); box-shadow: 0 3px 0 var(--ink);
 }
-#tutStep { font-size: 11px; font-weight: 800; opacity: .7; }
-#tutText { font-family: var(--display); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.25; text-wrap: balance; }
-#tutSub { font-size: 12px; font-weight: 800; color: var(--coral); margin-top: 2px; }
+#tutStep { font-size: 10px; font-weight: 800; opacity: .7; }
+#tutText { font-family: var(--display); font-size: clamp(13px, 3.4vw, 17px); line-height: 1.25; text-wrap: balance; }
+#tutSub { font-size: 11px; font-weight: 800; color: var(--coral); margin-top: 1px; }
 .btn {
   font-family: var(--display); font-size: 22px; color: #fff; background: #ff9d00;
   border: 2px solid var(--ink); border-radius: 999px; padding: 12px 18px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
@@ -212,6 +214,7 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
   <div id="status" class="card">
     <div class="row"><span class="lbl">スコア</span><span id="score">0</span></div>
     <div class="row"><span class="lbl">のこり</span><span id="time">90.0</span></div>
+    <div id="mult" hidden><div class="row"><span class="lbl">コンボ倍率</span><span id="multNum">×1.0</span></div><div id="multBar"><i></i></div></div>
     <div id="combo"></div>
   </div>
   <div id="task" class="card">
@@ -227,7 +230,6 @@ body.touch #gaugeWrap { right: max(12px, env(safe-area-inset-right, 0px)); botto
 <div id="hint"></div>
 <div id="vig"></div>
 <div id="tut" class="card" hidden><div id="tutStep">れんしゅう 1 / 3</div><div id="tutText"></div><div id="tutSub"></div></div>
-<div id="mult" hidden><span id="multNum">×1.0</span><div id="multBar"><i></i></div><div id="multLbl">コンボ倍率</div></div>
 <div id="trick"></div>
 <div id="splats"></div>
 <div id="bolt"></div>
@@ -1047,6 +1049,9 @@ requestAnimationFrame(() => setTimeout(() => {
   const foodMeshes = {};
   FOODS.forEach(f => { foodMeshes[f.id] = foodModel(f.id); foodMeshes[f.id].traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); });
   surfer.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });   // she shades her own board and tray
+  // her body lives on layer 1: the main camera sees it, the close-up camera (layer 0 only) looks straight past her to the food
+  rider.traverse(o => { if (o.isMesh) { let p = o, inTray = false; while (p) { if (p === tray) { inTray = true; break; } p = p.parent; } if (!inTray) o.layers.set(1); } });
+  camera.layers.enable(1);
   // THE STACK: dishes piled on the tray, each one sitting on the one below, so the pile bends as it leans
   const stackG = new THREE.Group(); tray.add(stackG);
   let stackNodes = [];
@@ -1391,7 +1396,10 @@ requestAnimationFrame(() => setTimeout(() => {
     popTimer = popQ.length ? 0.8 : 1.15;
   }
   function pop(text, color) { popQ.push([text, color]); if (popTimer <= 0) showNextPop(); }
+  let hudDirty = true;
+  function measureHud() { const hb = $('hud').getBoundingClientRect().bottom; if (hb > 0) { document.documentElement.style.setProperty('--hudB', Math.round(hb) + 'px'); hudDirty = false; } }
   function hint(text) {
+    if (tut) return;                                   // the practice card is already talking
     if (lastHint === text && hintTimer > 0.5) { hintTimer = 1; return; }
     lastHint = text; $('hint').textContent = text; $('hint').classList.add('show'); hintTimer = 1;
   }
@@ -1401,7 +1409,8 @@ requestAnimationFrame(() => setTimeout(() => {
     $('score').textContent = score.toLocaleString();
     const tEl = $('time'); tEl.textContent = Math.max(0, timeLeft).toFixed(1); tEl.classList.toggle('low', timeLeft < 15);
     $('combo').textContent = px < WALL_X && jumpY === 0 ? '波ライド中！ スピードUP' : boost > 1 ? 'スピードUP中' : '';
-    $('mult').hidden = mult <= 1.05;
+    const mh = mult <= 1.05; if ($('mult').hidden !== mh) { $('mult').hidden = mh; hudDirty = true; }
+    if (frameNo % 20 === 0 || hudDirty) measureHud();
     $('multNum').textContent = '×' + mult.toFixed(1);
     $('multBar').firstElementChild.style.width = clamp(chainT / 5, 0, 1) * 100 + '%';
     $('tipRow').hidden = phase !== 'deliver';
@@ -2031,7 +2040,7 @@ requestAnimationFrame(() => setTimeout(() => {
   $('retryBtn').addEventListener('click', start);
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
-    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); hudDirty = true;
   });
 
   food = Object.assign({ n: 2 }, FOODS[2]);
