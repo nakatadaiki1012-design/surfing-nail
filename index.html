@@ -193,6 +193,15 @@ body.touch #pad {
 }
 .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
 .btn:disabled { background: #b9c3cc; cursor: default; }
+#modeSel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode {
+  font-family: var(--body); color: var(--ink); background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 8px 6px;
+  display: grid; gap: 2px; cursor: pointer; text-align: center;
+}
+.mode b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.mode small { font-size: 11px; font-weight: 800; opacity: .75; line-height: 1.35; }
+.mode[aria-checked="true"] { border-color: var(--ink); background: #fff3d6; box-shadow: 0 3px 0 var(--ink); }
+.mode:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 #rank { font-family: var(--display); font-size: 72px; line-height: 1; color: var(--sun); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); }
 .res { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; text-align: left; font-size: 15px; font-weight: 800; padding: 12px 16px; background: #eef8fb; border-radius: 10px; }
@@ -249,13 +258,17 @@ body.touch #pad {
     <div class="how">
       <div><kbd>1</kbd><span><b>オレンジの光</b>のお店を通って、料理を受け取る</span></div>
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
-      <div><kbd>3</kbd><span>積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう</span></div>
+      <div><kbd>3</kbd><span id="rule3">積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう</span></div>
     </div>
     <p class="small">はじめての人には、遊びながら操作を教えるよ。</p>
     <details class="more"><summary>くわしい遊び方・操作</summary>
     <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
     <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
     </details>
+    <div id="modeSel" role="radiogroup" aria-label="操作のしかた">
+      <button type="button" class="mode" data-mode="one" role="radio"><b>片手</b><small>なめらかに乗れば<br>料理は倒れない</small></button>
+      <button type="button" class="mode" data-mode="two" role="radio"><b>両手</b><small>左手でサーフィン<br>右手で料理を支える</small></button>
+    </div>
     <button class="btn" id="startBtn" disabled>読み込み中…</button>
   </div>
 </div>
@@ -1342,7 +1355,9 @@ requestAnimationFrame(() => setTimeout(() => {
   let camY = 0, aerialT = 0, rideAcc = 0, aerialReady = true;
   let obsTimer = 2, coinTimer = 1, invuln = 0, shake = 0, landJolt = 0, spillCool = 0;
   let sloshV = 0, trayIn = 0, trayA = 0, rel = 0;
-  let lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
+  let oneHand = true;
+  try { oneHand = localStorage.getItem('surfdemae-mode') !== 'two'; } catch (e) {}
+  let bank = 0, carve = 0, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
   const LEAN_MAX = 0.6;
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
@@ -1490,7 +1505,7 @@ requestAnimationFrame(() => setTimeout(() => {
   function pickup() {
     newLeg('deliver'); buildStack(food.id, food.n); lean = 0; leanV = 0; graceT = 3;
     sfx.pick(); pop(`${food.name} 受け取り！`, '#ffd23f');
-    hint('倒れそうな方へ 手を動かして支えよう！');
+    hint(oneHand ? 'なめらかに！ 倒れそうな方へ曲がると立て直せる' : '倒れそうな方へ 手を動かして支えよう！');
   }
   function deliver() {
     const tip = Math.max(0, Math.round(320 - legTime * 22));
@@ -1621,7 +1636,8 @@ requestAnimationFrame(() => setTimeout(() => {
         } else if (phase === 'pickup') {
           say(3, 'オレンジの光のお店を通って、料理を受け取ろう', '光の輪の中を通るだけでOK');
         } else {
-          say(3, '料理が倒れそうな方へ、右手を動かして支えよう', touch ? '画面の右側に指を置いて、黄色い矢印の方へスライド' : 'マウスを黄色い矢印の方へ動かす');
+          if (oneHand) say(3, '急に曲がると料理がゆれる。なめらかに進もう', touch ? '倒れそうになったら、黄色い矢印の方へ指をスライド' : '倒れそうになったら、黄色い矢印の方へ A・D キー');
+          else say(3, '料理が倒れそうな方へ、右手を動かして支えよう', touch ? '画面の右側に指を置いて、黄色い矢印の方へスライド' : 'マウスを黄色い矢印の方へ動かす');
           tutT += dt; if (tutT > 7) { tut = 0; $('tut').hidden = true; try { localStorage.setItem('surfdemae-tut', '1'); } catch (e) {} pop('れんしゅう おしまい！ お客さんへ届けよう', '#9ff3d0'); }
         }
       }
@@ -1699,6 +1715,11 @@ requestAnimationFrame(() => setTimeout(() => {
     // Tuned for a knife-edge feel: it is never at rest, it keeps drifting toward the brink,
     // and at the brink it hangs for a heartbeat (and time slows) so a good hand can still save it.
     trayA += (trayIn - trayA) * Math.min(1, dt * 12);
+    // leaning into the turn: as a surfer carves, her body carries the tray toward the turn by itself,
+    // so steering already does part of the balancing and both thumbs move the same way
+    const turning = jumpY === 0 && wipeT <= 0 && !oneHand ? input : 0;
+    bank += (turning * 0.5 - bank) * Math.min(1, dt * 5);
+    carve += ((oneHand ? 0 : Math.abs(turning)) - carve) * Math.min(1, dt * 4);   // how deep into a carve we are (0..1)
     let brink = 0;
     if (playing && phase === 'deliver' && stackNodes.length) {
       const n = stackNodes.length, steady = crouch ? 0.6 : 1;
@@ -1706,13 +1727,22 @@ requestAnimationFrame(() => setTimeout(() => {
       const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady * ease;
       const nn = Math.abs(lean) / LEAN_MAX;
       const hang = 1 - 0.45 * clamp((nn - 0.7) / 0.3, 0, 1);                          // near the brink the pile hesitates
-      const A = food.tip * (1 + 0.12 * (n - 2)) * steady * ease * hang;
+      const A = food.tip * (1 + 0.12 * (n - 2)) * steady * ease * hang * (1 - 0.35 * carve);   // a committed carve steadies the pile
       const roll = -Math.atan(waveH(px + 0.5, 0) - waveH(px - 0.5, 0)) * 0.5;       // the board's own lean (big on the wave face)
-      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.14 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0)) * theme.rough;
+      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.14 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0)) * theme.rough * (1 - 0.6 * carve);
       leanV += sloshV * 0.42; sloshV = 0;                                            // jolts from tricks, landings and near misses
-      leanV += (A * (lean + roll * 0.6 - trayA * 0.8) - clamp(ax, -90, 90) * 0.016 * sens + chop * sens - leanV * 1.1) * dt;
+      // for as long as you turn, the pile is pushed INTO the turn; your body's lean catches part of it and the right hand the rest, same direction
+      if (oneHand) {
+        // one hand: the pile rights itself like a weighted toy; what knocks it over is rough riding
+        // (sharp turns, hard landings, wave faces, chop). Smooth surfing IS the balancing; crouching steadies it,
+        // and steering toward the side it leans helps it back.
+        const help = jumpY === 0 && wipeT <= 0 ? input : 0;
+        leanV += (-A * 0.8 * lean + A * roll * 1.0 - clamp(ax, -60, 60) * 0.066 * sens + chop * sens * 2.2 - leanV * 1.1) * dt;
+        if (help * lean > 0) leanV -= Math.abs(help) * A * 0.7 * Math.sign(lean) * dt;
+      } else
+      leanV += (A * (lean + roll * 0.6 - (trayA + bank) * 0.8) + A * 0.8 * 0.58 * turning + clamp(ax, -90, 90) * 0.004 * sens + chop * sens - leanV * 1.1) * dt;
       // the sea never lets it settle: the calmer the pile, the sooner the next shove, and it pushes toward the brink
-      gustT -= dt * (nn < 0.25 ? 2.2 : nn < 0.5 ? 1 : 0.4);
+      gustT -= dt * (nn < 0.25 ? 2.2 : nn < 0.5 ? 1 : 0.4) * (1 - 0.85 * carve);   // the sea's shoves wait until you straighten out
       if (gustT <= 0) { gustT = rand(2.6, 4.6) / theme.rough; leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.3, 0.52) * sens; }
       lean += leanV * dt; graceT -= dt;
       // past the limit it teeters for a moment before the top dish actually goes
@@ -1766,7 +1796,7 @@ requestAnimationFrame(() => setTimeout(() => {
     // carving throws a fan of spray off the outside rail
     if (jumpY === 0 && Math.abs(vx) > 5) for (let i = 0; i < 3; i++) emit(px - Math.sign(vx) * 0.5, sy + 0.15, rand(0.2, 1.4), -Math.sign(vx) * rand(2, 6), rand(2, 5.5), rand(0, 3));
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
-    tray.position.x = 0.56 + trayA * 0.07;                       // the hand visibly slides under the pile
+    tray.position.x = 0.56 + (trayA + bank) * 0.07;                       // the hand visibly slides under the pile
     {
       const nSt = stackNodes.length, nn = lean / LEAN_MAX;
       const hot = clamp((Math.abs(nn) - 0.55) / 0.45, 0, 1);
@@ -1975,6 +2005,7 @@ requestAnimationFrame(() => setTimeout(() => {
     if (onPad === 'tilt') left = false;
     if (left && stick.id !== null && tiltId === null) left = false;
     else if (!left && tiltId !== null && stick.id === null) left = true;
+    if (oneHand) { if (stick.id !== null) { jump(); return; } left = true; }   // one hand: any finger steers; a second finger jumps
     if (left) {
       if (stick.id !== null) return;
       stick.id = e.pointerId; stick.t0 = performance.now(); stick.moved = false;
@@ -2017,6 +2048,7 @@ requestAnimationFrame(() => setTimeout(() => {
   document.addEventListener('visibilitychange', () => { if (document.hidden) togglePause(true); });
   // on a computer the mouse does the right hand's job
   addEventListener('mousemove', e => {
+    if (oneHand) return;
     if (document.body.classList.contains('touch') || state !== 'play') return;
     trayIn = clamp((e.clientX - innerWidth / 2) / (innerWidth * 0.2), -1, 1);
   });
@@ -2027,8 +2059,8 @@ requestAnimationFrame(() => setTimeout(() => {
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
     $('hud').hidden = false; $('help').hidden = false; $('sys').hidden = false; $('paused').hidden = true;
-    $('help').textContent = document.body.classList.contains('touch') ? '' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
-    $('pad').hidden = false; trayIn = 0;
+    $('help').textContent = document.body.classList.contains('touch') ? '' : oneHand ? 'A D 移動（なめらかに。倒れる方へ曲がると立て直せる） ・ W ジャンプ ・ S しゃがむ' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
+    $('pad').hidden = false; trayIn = 0; tpEl.hidden = oneHand;
     let seen = false; try { seen = !!localStorage.getItem('surfdemae-tut'); } catch (e) {}
     tut = seen ? 0 : 1; tutT = 0; tutJumped = false; $('tut').hidden = tut === 0;
     updateHUD();
@@ -2036,6 +2068,14 @@ requestAnimationFrame(() => setTimeout(() => {
     applyTheme(THEMES[runs % THEMES.length]); boltT = rand(4, 8);
     pop(theme.note ? `${theme.name}：${theme.note}` : '出前スタート！', '#ffffff');
   }
+  function setMode(one) {
+    oneHand = one;
+    document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-checked', String((b.dataset.mode === 'one') === one)));
+    $('rule3').innerHTML = one ? '急に曲がる・乱暴に着地すると積んだ料理がゆれる。<b>なめらかに乗りこなそう</b>（倒れそうな方へ曲がると立て直せる）' : '積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう';
+    try { localStorage.setItem('surfdemae-mode', one ? 'one' : 'two'); } catch (e) {}
+  }
+  document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode === 'one')));
+  setMode(oneHand);
   $('startBtn').addEventListener('click', start);
   $('retryBtn').addEventListener('click', start);
   addEventListener('resize', () => {
