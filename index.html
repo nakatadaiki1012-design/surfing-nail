@@ -264,7 +264,7 @@ body.touch #pad {
     </div>
     <p class="small">はじめての人には、遊びながら操作を教えるよ。</p>
     <details class="more"><summary>くわしい遊び方・操作</summary>
-    <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で左右＝スピン、下＝グラブ</b>。回すほど高得点だが着地で料理が大きくゆれる。料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
+    <p class="small"><b>コンボ倍率</b>：スレスレでよける・ジャンプで越える・コイン・波乗り・大波で倍率アップ。<b>空中で下＝グラブ</b>。着地で料理がゆれるが、料理を持って決めると得点アップ。<b>届けると倍率ぶんの得点！</b> ぶつかる・こぼすと下がる。<br>注文が進むほど高く積む（2人前→最大6人前）。高いほど倒れやすく、得点も高い。左の波のカベに乗るとスピードアップ。ぜんぶ無事に、はやく届けると★3つ。届けるたびに +6秒。<br>前から<b>大波のセット</b>が何度も来る。<b>しゃがんで吸収</b>すれば安全で加速、<b>てっぺんでジャンプ</b>を合わせると大技で高得点（着地で料理が大きくゆれる）。<br>左の波のカベを登って、てっぺんまで行くとエアリアル！</p>
     <p class="small"><b>スマホ</b>：画面の左半分のどこでも＝左右にずらして移動・上にずらすかタップでジャンプ・下でしゃがむ／右半分のどこでも＝左右にずらして料理を支える<br><b>パソコン</b>：A D（← →）移動・W（↑・スペース）ジャンプ・S（↓）しゃがむ／マウスを左右に動かして料理を支える</p>
     </details>
     <div id="modeSel" role="radiogroup" aria-label="操作のしかた">
@@ -312,9 +312,9 @@ requestAnimationFrame(() => setTimeout(() => {
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.2, tip: 3.3, damp: 1.1, wind: 1, jerk: 1, trait: '手を急に動かすとスープがはねる', base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.95, tip: 2.6, damp: 1.25, wind: 1.6, jerk: 0, trait: '軽いので 波風にあおられやすい', base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.7, tip: 1.65, damp: 0.55, wind: 0.8, jerk: 0, trait: '重いので 動き出すと止まりにくい', base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.0, tip: 2.4, damp: 1.1, wind: 1, jerk: 1, trait: '手を急に動かすとスープがはねる', base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.8, tip: 1.9, damp: 1.25, wind: 1.6, jerk: 0, trait: '軽いので 波風にあおられやすい', base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.6, tip: 1.25, damp: 0.55, wind: 0.8, jerk: 0, trait: '重いので 動き出すと止まりにくい', base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -1378,7 +1378,7 @@ requestAnimationFrame(() => setTimeout(() => {
   try { oneHand = localStorage.getItem('surfdemae-mode2') === 'one'; } catch (e) {}
   let inZone = false, zoneT = 0, steadyTip = 0, steadyRun = 0, lastTrayA = 0, splashCool = 0;
   let bank = 0, carve = 0, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
-  const LEAN_MAX = 0.6;
+  const LEAN_MAX = 0.7;
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
   let wipeT = 0, runCount = 0, boltT = 6;
@@ -1544,7 +1544,7 @@ requestAnimationFrame(() => setTimeout(() => {
         // landing shoves the pile away from the thrower; a steady pile (or one leaning into the throw) takes it cleanly
         const ready = Math.abs(lean) < LEAN_MAX * 0.28 || (lean * t.side > 0 && Math.abs(lean) < LEAN_MAX * 0.65);   // steady, or already leaning into the throw
         buildStack(food.id, stackNodes.length + 1); foodLeft = 1;
-        leanV += -t.side * (ready ? 0.12 : 0.55) * food.fragile;
+        leanV += -t.side * (ready ? 0.08 : 0.35) * food.fragile;
         if (ready) { toast(`ナイスキャッチ！ +${gain(40, 0.12)}`); sfx.good(); sparkle(); }
         else beep(220, 0.12, 'triangle', 0.07, 0.7);
       }
@@ -1645,16 +1645,12 @@ requestAnimationFrame(() => setTimeout(() => {
       vy -= 22 * dt; jumpY += vy * dt - (ridges.some(g => g.on && g.just && !g.done) ? Math.min(dS, 0) : dS); airMax = Math.max(airMax, jumpY);   // the water can drop away under you
       if (aerialT > 0) aerialT += dt;
       if (playing && jumpY > 0.5) {
-        spinA += input * dt * 7.5;                                   // hold left / right in the air to spin
         if (keys.down || stick.down) { grabT += dt; if (grabT > 0.3 && !grabbed) { grabbed = true; toast('グラブ！'); } }
       }
       if (jumpY <= 0) {
         // score the tricks; every one of them shakes the tray in proportion to how hard it was
         const carry = phase === 'deliver' ? 1 + food.fragile * 0.3 + stackNodes.length * 0.15 : 1;   // doing it with food in hand is worth more
-        const turns = Math.abs(spinA) / (Math.PI * 2), full = Math.floor(turns + 0.2), frac = turns - Math.floor(turns);
         let jolt = 0;
-        if (full >= 1) { pop(`${full * 360}！ +${gain(Math.round(150 * full * (full + 1) / 2 * carry), 0.3 * full)}`, '#ffd23f'); jolt += 1.0 * full; sfx.perfect(); }
-        if (turns > 0.2 && frac > 0.2 && frac < 0.8) { toast('着地が乱れた！', true); jolt += 1.3; }
         if (grabbed) { toast(`グラブ +${gain(Math.round(120 * carry), 0.25)}`); jolt += 0.6; }
         const slope = surfVel < -2.5 ? 0.5 : surfVel > 2 ? 1.35 : 1;                     // down-slope landing is clean, up-slope is a slam
         if (airMax > 1.6 && slope < 1) toast(`クリーン着地！ +${gain(40, 0.15)}`); else if (airMax > 1.6 && slope > 1) toast('ドスン！ 平らに落ちた', true);
@@ -1724,11 +1720,11 @@ requestAnimationFrame(() => setTimeout(() => {
         }
         bigLeft = near ? 1 : 0;
         if (active[0].z > -80) $('big').hidden = true;
-        if (!ridges.some(g => g.on)) { nextBig = elapsed + rand(8, 12); bigLeft = 0; }
+        if (!ridges.some(g => g.on)) { nextBig = elapsed + rand(13, 18); bigLeft = 0; }
       } else if (elapsed >= nextBig && timeLeft > 10) {
         // a new set: one wave the first time, then two or three, each taller than the last
         setNo++;
-        const count = setNo === 1 ? 1 : setNo === 2 ? 2 : (Math.random() < 0.5 ? 2 : 3);
+        const count = setNo <= 2 ? 1 : (Math.random() < 0.6 ? 1 : 2);
         for (let i = 0; i < count; i++) Object.assign(ridges[i], { on: true, done: false, just: false, z: -185 - i * 34, h: 0.01, hMax: 3.4 + i * 1.1 + Math.min(setNo, 5) * 0.2 });
         $('big').innerHTML = (count > 1 ? `大波のセット ${count}本！` : '大波が来る！') + '<br><small>しゃがんで吸収 か、てっぺんでジャンプ</small>';
         $('big').hidden = false; beep(110, 0.9, 'sawtooth', 0.08, 2.2);
@@ -1778,7 +1774,7 @@ requestAnimationFrame(() => setTimeout(() => {
     let brink = 0;
     if (playing && phase === 'deliver' && stackNodes.length) {
       const n = stackNodes.length, steady = crouch ? 0.6 : 1;
-      const ease = orderIdx <= 3 ? 0.8 : Math.min(1.35, 1 + (orderIdx - 4) * 0.07);   // a warm-up first, then every order is a little harder than the last
+      const ease = orderIdx <= 4 ? 0.75 : Math.min(1.2, 0.9 + (orderIdx - 5) * 0.05);   // a warm-up first, then every order is a little harder than the last
       const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady * ease;
       const nn = Math.abs(lean) / LEAN_MAX;
       const hang = 1 - 0.45 * clamp((nn - 0.7) / 0.3, 0, 1);                          // near the brink the pile hesitates
@@ -1798,14 +1794,14 @@ requestAnimationFrame(() => setTimeout(() => {
       leanV += (A * (lean + roll * 0.6 - (trayA + bank) * 0.8) + A * 0.8 * 0.58 * turning + clamp(ax, -90, 90) * 0.004 * sens + chop * sens * food.wind - leanV * food.damp) * dt;
       // the sea never lets it settle: the calmer the pile, the sooner the next shove, and it pushes toward the brink
       gustT -= dt * (nn < 0.25 ? 2.2 : nn < 0.5 ? 1 : 0.4) * (1 - 0.85 * carve);   // the sea's shoves wait until you straighten out
-      if (gustT <= 0) { gustT = rand(2.6, 4.6) / theme.rough; leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.3, 0.52) * sens * food.wind; }
+      if (gustT <= 0) { gustT = rand(2.6, 4.6) / theme.rough; leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.2, 0.36) * sens * food.wind; }
       lean += leanV * dt; graceT -= dt;
       // past the limit it teeters for a moment before the top dish actually goes
       if (Math.abs(lean) > LEAN_MAX && graceT <= 0) teeterT += dt; else teeterT = Math.max(0, teeterT - dt * 2);
-      if (teeterT > 0.32) {
+      if (teeterT > 0.5) {
         const sg = Math.sign(lean);
         dropTop('バランスをくずして'); teeterT = 0;
-        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 1.4;                // the rest of the pile rocks back: a moment to recover
+        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 2.0;                // the rest of the pile rocks back: a moment to recover
       }
       lean = clamp(lean, -LEAN_MAX * 1.18, LEAN_MAX * 1.18);
       brink = clamp((nn - 0.72) / 0.28, 0, 1);
@@ -1817,7 +1813,7 @@ requestAnimationFrame(() => setTimeout(() => {
       } else { zoneT = 0; if (nn > 0.6) steadyRun = 0; }
       // ramen: a sudden flick of the hand splashes soup out of the bowl and costs tip
       const handSpeed = Math.abs(trayA - lastTrayA) / Math.max(dt, 1e-3); lastTrayA = trayA;
-      if (food.jerk && !oneHand && handSpeed > 5.5 && splashCool <= 0) {
+      if (food.jerk && !oneHand && handSpeed > 7 && splashCool <= 0) {
         splashCool = 0.5; const lost = Math.min(steadyTip, 40); steadyTip -= lost;
         tray.getWorldPosition(_tw); for (let i = 0; i < 18; i++) emitFood(_tw.x + rand(-0.1, 0.1), _tw.y + stackHeight(), _tw.z, rand(-1.5, 1.5), rand(1, 2.5), rand(-0.5, 0.5));
         toast(`スープがはねた！ チップ -${Math.round(lost)}`, true); beep(300, 0.12, 'square', 0.04, 0.6);
@@ -1851,7 +1847,7 @@ requestAnimationFrame(() => setTimeout(() => {
     const dhx = (waveH(px + 0.5, 0) - waveH(px - 0.5, 0));
     const dhz = (waveH(px, -0.8) - waveH(px, 0.8)) / 1.6;
     surfer.position.set(px, sy + 0.08 + jumpY, 0);
-    surfer.rotation.y = (aerialT > 0 ? Math.PI * 2 * clamp(aerialT / 1.0, 0, 1) : 0) + spinA;
+    surfer.rotation.y = 0;
     jumpBuf = Math.max(0, jumpBuf - dt);
     board.rotation.set(-Math.atan(dhz) * 0.8 + (jumpY > 0 ? -0.25 : 0), -vx * 0.06, Math.atan(dhx) * 0.9 - vx * 0.06);   // lean hard into carves
     // body leans into the carve; on a wipeout she goes over the side and climbs back on
@@ -1993,8 +1989,7 @@ requestAnimationFrame(() => setTimeout(() => {
       camera.rotation.order = 'YXZ';
       const eyeY = 0.08 + 1.62 * (1 - squat * 0.2) - (wipeT > 0 ? Math.sin((1 - wipeT) * Math.PI) * 0.6 : 0);
       camera.position.set(px + rand(-sh, sh) * 0.15, camY + jumpY + eyeY + rand(-sh, sh) * 0.15, 0.15);
-      const spinNow = (aerialT > 0 ? Math.PI * 2 * clamp(aerialT / 1.0, 0, 1) : 0) + spinA;
-      camera.rotation.set(-0.2 + Math.atan(dhz) * 0.3 - (jumpY > 0 ? 0.1 : 0), -vx * 0.015 + spinNow, Math.atan(dhx) * 0.35 - vx * 0.02 - wk * 0.9);
+      camera.rotation.set(-0.2 + Math.atan(dhz) * 0.2 - (jumpY > 0 ? 0.06 : 0), -vx * 0.012, Math.atan(dhx) * 0.15 - vx * 0.01 - wk * 0.3);   // a gentle sway only: no spinning view
     }
 
     if (popTimer > 0) { popTimer -= dt; if (popTimer <= 0) showNextPop(); }
