@@ -250,7 +250,7 @@ body.touch #pad {
 <div id="gaugeWrap" class="card" hidden><div id="pip"><span id="pushL" hidden>◀</span><span id="pushR" hidden>▶</span></div><div id="gaugeFoot"><div id="balBar"><i id="balMark"></i></div><div id="gaugeTxt">トレーを水平に！</div></div></div>
 <div id="pad" hidden>
   <div id="stick"><div id="knob"></div><span class="lab l">◀</span><span class="lab r">▶</span><span class="lab u">ジャンプ</span><span class="lab d">しゃがむ</span></div>
-  <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ たおれる方へ ▶</span></div>
+  <div id="tiltPad"><div id="tiltKnob"></div><span class="lab t">◀ トレーを傾ける ▶</span></div>
 </div>
 
 <div id="title" class="overlay">
@@ -260,7 +260,7 @@ body.touch #pad {
     <div class="how">
       <div><kbd>1</kbd><span><b>オレンジの光</b>のお店を通って、料理を受け取る</span></div>
       <div><kbd>2</kbd><span><b>緑の光</b>のお客さんのボートまで届ける</span></div>
-      <div><kbd>3</kbd><span id="rule3">積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう</span></div>
+      <div><kbd>3</kbd><span id="rule3">動き出し・波の斜面・着地で料理が傾く。<b>右手でトレーを傾けて</b>水平にたもとう</span></div>
     </div>
     <p class="small">はじめての人には、遊びながら操作を教えるよ。</p>
     <details class="more"><summary>くわしい遊び方・操作</summary>
@@ -312,9 +312,9 @@ requestAnimationFrame(() => setTimeout(() => {
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.0, tip: 2.4, damp: 1.1, wind: 1, jerk: 1, trait: '手を急に動かすとスープがはねる', base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.8, tip: 1.9, damp: 1.25, wind: 1.6, jerk: 0, trait: '軽いので 波風にあおられやすい', base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.6, tip: 1.25, damp: 0.55, wind: 0.8, jerk: 0, trait: '重いので 動き出すと止まりにくい', base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.0, k: 1.0, zeta: 0.32, tcMul: 0.9, wind: 1, jerk: 1, trait: 'ゆらゆら揺れが残る。トレーを急に傾けるとスープがはねる', base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.8, k: 1.25, zeta: 0.45, tcMul: 1.0, wind: 1.7, jerk: 0, trait: '軽いので 風であおられやすい', base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.6, k: 0.6, zeta: 0.55, tcMul: 1.15, wind: 0.7, jerk: 0, trait: '重いので ゆっくり傾く。傾きだすと戻すのに時間がかかる', base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -1377,8 +1377,8 @@ requestAnimationFrame(() => setTimeout(() => {
   oneHand = false;
   try { oneHand = localStorage.getItem('surfdemae-mode2') === 'one'; } catch (e) {}
   let inZone = false, zoneT = 0, steadyTip = 0, steadyRun = 0, lastTrayA = 0, splashCool = 0;
-  let bank = 0, carve = 0, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
-  const LEAN_MAX = 0.7;
+  let handTilt = 0, tc = 0.32, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
+  const HAND_MAX = 0.38;     // how far the right hand can tip the tray (radians)
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
   let jumpBuf = 0, spinA = 0, grabT = 0, grabbed = false;
   let wipeT = 0, runCount = 0, boltT = 6;
@@ -1414,7 +1414,7 @@ requestAnimationFrame(() => setTimeout(() => {
     px = 0; vx = 0; jumpY = 0; vy = 0; speed = 18; lastVx = 0;
     score = 0; timeLeft = GAME_TIME; elapsed = 0; delivered = 0; clean = 0;
     mult = 1; maxMult = 1; chainT = 0; starsTotal = 0; orderIdx = 0; boost = 0; balT = 0;
-    obsTimer = 6; coinTimer = 1.2; invuln = 0; shake = 0; sloshV = 0; trayA = 0; lean = 0; leanV = 0;
+    obsTimer = 6; coinTimer = 1.2; invuln = 0; shake = 0; sloshV = 0; trayA = 0; handTilt = 0; lean = 0; leanV = 0;
     nextBig = rand(9, 11); bigLeft = 0; bigAmt = 0; ridges.forEach(g => { g.on = false; g.z = -999; g.h = 0; }); setNo = 0; debris.forEach(d => scene.remove(d.m)); debris = []; dist = 0; aerialT = 0; rideAcc = 0; aerialReady = true;
     popQ.length = 0;
     newLeg('pickup');
@@ -1474,8 +1474,8 @@ requestAnimationFrame(() => setTimeout(() => {
     const n = rel / limitNow(), danger = Math.abs(n) > 1, warn = Math.abs(n) > 0.6;
     $('balMark').style.left = (50 + clamp(n, -1.3, 1.3) / 1.3 * 50) + '%';   // marker = which way the pile is leaning
     $('gaugeWrap').classList.toggle('danger', danger);
-    $('pushR').hidden = !(warn && rel > 0); $('pushL').hidden = !(warn && rel < 0);
-    $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : warn ? (rel > 0 ? '右へ動かして →' : '← 左へ動かして') : 'いいバランス';
+    $('pushR').hidden = !(warn && rel < 0); $('pushL').hidden = !(warn && rel > 0);
+    $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : warn ? (rel > 0 ? '← トレーを左へ傾けて' : 'トレーを右へ傾けて →') : 'いいバランス';
     $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
 
@@ -1522,7 +1522,7 @@ requestAnimationFrame(() => setTimeout(() => {
     const cols = [0xff4f8b, 0xffd23f, 0x3fe0a8, 0x39c6f0, 0xffffff, 0xff9d00];
     for (let i = 0; i < 90; i++) emitFood(px + rand(-1.2, 1.2), surfer.position.y + rand(1.5, 3), rand(-1, 1), rand(-4, 4), rand(2, 7), rand(-3, 1), cols[i % cols.length], rand(0.9, 1.6), 5);
   }
-  const limitNow = () => LEAN_MAX;
+  const limitNow = () => tc;
   // dishes in the air, thrown from the shop onto the pile (tray space, so they track your hand)
   const tosses = [];
   function updateTosses(dt) {
@@ -1542,9 +1542,9 @@ requestAnimationFrame(() => setTimeout(() => {
         tosses.splice(k, 1);
         if (phase !== 'deliver' || !stackNodes.length) continue;
         // landing shoves the pile away from the thrower; a steady pile (or one leaning into the throw) takes it cleanly
-        const ready = Math.abs(lean) < LEAN_MAX * 0.28 || (lean * t.side > 0 && Math.abs(lean) < LEAN_MAX * 0.65);   // steady, or already leaning into the throw
+        const ready = Math.abs(lean) < tc * 0.3 || (lean * t.side > 0 && Math.abs(lean) < tc * 0.7);   // steady, or already leaning into the throw
         buildStack(food.id, stackNodes.length + 1); foodLeft = 1;
-        leanV += -t.side * (ready ? 0.08 : 0.35) * food.fragile;
+        leanV += -t.side * (ready ? 0.12 : 0.5) * food.fragile;
         if (ready) { toast(`ナイスキャッチ！ +${gain(40, 0.12)}`); sfx.good(); sparkle(); }
         else beep(220, 0.12, 'triangle', 0.07, 0.7);
       }
@@ -1688,7 +1688,7 @@ requestAnimationFrame(() => setTimeout(() => {
           say(3, 'オレンジの光のお店を通って、料理を受け取ろう', '光の輪の中を通るだけでOK');
         } else {
           if (oneHand) say(3, '急に曲がると料理がゆれる。なめらかに進もう', touch ? '倒れそうになったら、黄色い矢印の方へ指をスライド' : '倒れそうになったら、黄色い矢印の方へ A・D キー');
-          else say(3, '料理が倒れそうな方へ、右手を動かして支えよう', touch ? '画面の右側に指を置いて、黄色い矢印の方へスライド' : 'マウスを黄色い矢印の方へ動かす');
+          else say(3, '料理が傾いたら、反対側へトレーを傾けて立て直そう', touch ? '画面の右側に指を置いて、黄色い矢印の方へスライド' : 'マウスを黄色い矢印の方へ動かす');
           tutT += dt; if (tutT > 7) { tut = 0; $('tut').hidden = true; try { localStorage.setItem('surfdemae-tut', '1'); } catch (e) {} pop('れんしゅう おしまい！ お客さんへ届けよう', '#9ff3d0'); }
         }
       }
@@ -1765,45 +1765,40 @@ requestAnimationFrame(() => setTimeout(() => {
     // The right hand slides the tray under it: push toward the side it is falling to.
     // Tuned for a knife-edge feel: it is never at rest, it keeps drifting toward the brink,
     // and at the brink it hangs for a heartbeat (and time slows) so a good hand can still save it.
+    // BALANCE, the physical way. You hold a tray; the pile on it is a springy tower that stands up by itself
+    // and only goes over past its tipping point. What pushes it is real:
+    //   inertia  - when the board starts sliding sideways the pile is left behind and leans the other way
+    //   the wave - riding across a slope tilts the board, and the tray with it
+    //   bumps    - landings, crests, plates landing on it, near misses, crashes, the odd gust
+    // The right hand tilts the tray (right thumb right = right side down). Tilt it into a push, level it against the wave.
     trayA += (trayIn - trayA) * Math.min(1, dt * 12);
-    // leaning into the turn: as a surfer carves, her body carries the tray toward the turn by itself,
-    // so steering already does part of the balancing and both thumbs move the same way
-    const turning = jumpY === 0 && wipeT <= 0 && !oneHand ? input : 0;
-    bank += (turning * 0.5 - bank) * Math.min(1, dt * 5);
-    carve += ((oneHand ? 0 : Math.abs(turning)) - carve) * Math.min(1, dt * 4);   // how deep into a carve we are (0..1)
+    const dhxP = waveH(px + 0.5, 0) - waveH(px - 0.5, 0);
+    const waveDown = -Math.atan(dhxP) * 0.9 * 1.2;                                  // the slope under you (right side down = +); your arm already soaks up part of it
+    const inertia = -clamp(jumpY === 0 ? ax : 0, -45, 45) * 0.0095;                   // speeding up to the right leaves the pile leaning left
+    const handWant = oneHand ? clamp(-waveDown * 0.75 - inertia * 0.55, -HAND_MAX, HAND_MAX) : trayA * HAND_MAX;   // one hand: the arm levels the tray by itself, mostly
+    handTilt += (handWant - handTilt) * Math.min(1, dt * 10);
     let brink = 0;
     if (playing && phase === 'deliver' && stackNodes.length) {
-      const n = stackNodes.length, steady = crouch ? 0.6 : 1;
-      const ease = orderIdx <= 4 ? 0.75 : Math.min(1.2, 0.9 + (orderIdx - 5) * 0.05);   // a warm-up first, then every order is a little harder than the last
-      const sens = food.fragile * (1 + 0.1 * (n - 2)) * steady * ease;
-      const nn = Math.abs(lean) / LEAN_MAX;
-      const hang = 1 - 0.45 * clamp((nn - 0.7) / 0.3, 0, 1);                          // near the brink the pile hesitates
-      const A = food.tip * (1 + 0.12 * (n - 2)) * steady * ease * hang * (1 - 0.35 * carve);   // a committed carve steadies the pile
-      const roll = -Math.atan(waveH(px + 0.5, 0) - waveH(px - 0.5, 0)) * 0.5;       // the board's own lean (big on the wave face)
-      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.14 + bigAmt * 0.3 + Math.abs(vx) * 0.012 + (px < WALL_X ? 0.18 : 0)) * theme.rough * (1 - 0.6 * carve);
-      leanV += sloshV * 0.42; sloshV = 0;                                            // jolts from tricks, landings and near misses
-      // for as long as you turn, the pile is pushed INTO the turn; your body's lean catches part of it and the right hand the rest, same direction
-      if (oneHand) {
-        // one hand: the pile rights itself like a weighted toy; what knocks it over is rough riding
-        // (sharp turns, hard landings, wave faces, chop). Smooth surfing IS the balancing; crouching steadies it,
-        // and steering toward the side it leans helps it back.
-        const help = jumpY === 0 && wipeT <= 0 ? input : 0;
-        leanV += (-A * 0.8 * lean + A * roll * 1.0 - clamp(ax, -60, 60) * 0.066 * sens + chop * sens * 2.2 - leanV * 1.1) * dt;
-        if (help * lean > 0) leanV -= Math.abs(help) * A * 0.7 * Math.sign(lean) * dt;
-      } else
-      leanV += (A * (lean + roll * 0.6 - (trayA + bank) * 0.8) + A * 0.8 * 0.58 * turning + clamp(ax, -90, 90) * 0.004 * sens + chop * sens * food.wind - leanV * food.damp) * dt;
-      // the sea never lets it settle: the calmer the pile, the sooner the next shove, and it pushes toward the brink
-      gustT -= dt * (nn < 0.25 ? 2.2 : nn < 0.5 ? 1 : 0.4) * (1 - 0.85 * carve);   // the sea's shoves wait until you straighten out
-      if (gustT <= 0) { gustT = rand(2.6, 4.6) / theme.rough; leanV += (lean === 0 ? 1 : Math.sign(lean + (Math.random() - 0.5) * 0.3)) * rand(0.2, 0.36) * sens * food.wind; }
+      const n = stackNodes.length, steady = crouch ? 0.65 : 1;
+      const ease = orderIdx <= 4 ? 1.15 : Math.max(0.9, 1.1 - (orderIdx - 5) * 0.03);   // warm-up orders have a wider tipping point
+      tc = clamp(0.34 - 0.03 * (n - 2), 0.2, 0.36) * food.tcMul * ease * (crouch ? 1.12 : 1);
+      const K = 22 / (1 + 0.22 * (n - 1)) * food.k, C = 2 * food.zeta * Math.sqrt(K);  // taller = slower, bigger sway
+      const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.012 + bigAmt * 0.04 + (px < WALL_X ? 0.03 : 0)) * theme.rough;
+      const target = (handTilt + waveDown + inertia * food.fragile) * steady + chop * food.wind;   // where the pile wants to settle
+      leanV += sloshV * 0.33 * steady; sloshV = 0;                                    // jolts
+      const nn = Math.abs(lean) / tc;
+      if (nn < 1) leanV += (K * (target - lean) - C * leanV) * dt;                    // springs back toward the target
+      else leanV += (K * 0.35 * (target - lean) + 16 * (Math.abs(lean) - tc) * Math.sign(lean) - C * leanV) * dt;   // past the tipping point gravity takes over
+      gustT -= dt;
+      if (gustT <= 0) { gustT = rand(3, 6) / theme.rough; leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.18, 0.34) * food.wind * steady; }
       lean += leanV * dt; graceT -= dt;
-      // past the limit it teeters for a moment before the top dish actually goes
-      if (Math.abs(lean) > LEAN_MAX && graceT <= 0) teeterT += dt; else teeterT = Math.max(0, teeterT - dt * 2);
-      if (teeterT > 0.5) {
+      teeterT = clamp((Math.abs(lean) - tc) / 0.16, 0, 1) * 0.5;                      // how far over it is (the top dish starts sliding)
+      if (Math.abs(lean) > tc + 0.16 && graceT <= 0) {
         const sg = Math.sign(lean);
-        dropTop('バランスをくずして'); teeterT = 0;
-        lean = sg * LEAN_MAX * 0.45; leanV = -sg * 0.5; graceT = 2.0;                // the rest of the pile rocks back: a moment to recover
+        dropTop('バランスをくずして');
+        lean = sg * tc * 0.5; leanV = -sg * 0.4; graceT = 1.5;                       // the rest of the pile rocks back: a moment to recover
       }
-      lean = clamp(lean, -LEAN_MAX * 1.18, LEAN_MAX * 1.18);
+      lean = clamp(lean, -(tc + 0.18), tc + 0.18);
       brink = clamp((nn - 0.72) / 0.28, 0, 1);
       // in the green zone the tip keeps growing, with a sparkle and a soft chime each time it ticks up
       inZone = nn < 0.3 && !tosses.length;
@@ -1811,9 +1806,9 @@ requestAnimationFrame(() => setTimeout(() => {
         zoneT += dt; steadyTip += dt * (14 + n * 3);
         if (zoneT > 1) { zoneT = 0; beep(1568 + Math.min(steadyRun, 6) * 110, 0.09, 'sine', 0.035); steadyRun++; sparkle(); }
       } else { zoneT = 0; if (nn > 0.6) steadyRun = 0; }
-      // ramen: a sudden flick of the hand splashes soup out of the bowl and costs tip
-      const handSpeed = Math.abs(trayA - lastTrayA) / Math.max(dt, 1e-3); lastTrayA = trayA;
-      if (food.jerk && !oneHand && handSpeed > 7 && splashCool <= 0) {
+      // ramen: whipping the tray over splashes soup out of the bowl and costs tip
+      const handSpeed = Math.abs(handTilt - lastTrayA) / Math.max(dt, 1e-3); lastTrayA = handTilt;
+      if (food.jerk && !oneHand && handSpeed > 2.4 && splashCool <= 0) {
         splashCool = 0.5; const lost = Math.min(steadyTip, 40); steadyTip -= lost;
         tray.getWorldPosition(_tw); for (let i = 0; i < 18; i++) emitFood(_tw.x + rand(-0.1, 0.1), _tw.y + stackHeight(), _tw.z, rand(-1.5, 1.5), rand(1, 2.5), rand(-0.5, 0.5));
         toast(`スープがはねた！ チップ -${Math.round(lost)}`, true); beep(300, 0.12, 'square', 0.04, 0.6);
@@ -1864,16 +1859,18 @@ requestAnimationFrame(() => setTimeout(() => {
     surfer.visible = !(invuln > 0 && Math.floor(invuln * 12) % 2 === 0 && playing);
     const fp = state !== 'title';                                 // first person while playing
     tray.position.copy(fp ? (camera.aspect < 1 ? TRAY_FPN : TRAY_FP) : TRAY_TP); tray.scale.setScalar(fp ? (camera.aspect < 1 ? 0.55 : 0.62) : 1.3); fpArm.visible = fp;   // narrow screens: nearer the middle so it stays in view
-    tray.position.x += (trayA + bank) * (fp ? 0.1 : 0.07);          // the hand visibly slides under the pile
+    tray.rotation.set(0, 0, -handTilt);                            // the tray tips in your hand
     {
-      const nSt = stackNodes.length, nn = lean / LEAN_MAX;
+      const nSt = stackNodes.length, nn = lean / tc;
+      const trayWorld = handTilt - (board.rotation.z + rider.rotation.z);   // how the tray is tipped against the horizon
+      const relLean = lean - trayWorld;                                     // so the pile shows its real lean, not the tray's
       const hot = clamp((Math.abs(nn) - 0.55) / 0.45, 0, 1);
       stackNodes.forEach((node, i) => {
-        node.rotation.z = -lean * (i === 0 ? 0.55 : 0.45 / Math.max(1, nSt - 1)) + Math.sin(T * 38 + i * 1.7) * 0.014 * hot;   // rattles when it is about to go
+        node.rotation.z = -relLean * (i === 0 ? 0.55 : 0.45 / Math.max(1, nSt - 1)) + Math.sin(T * 38 + i * 1.7) * 0.014 * hot;   // rattles when it is about to go
         if (i === nSt - 1) node.position.x = (i === 0 ? 0 : -lean * 0.012) + Math.sign(lean) * teeterT * 0.25;                     // the top dish starts to slide as it teeters
         else node.position.x = i === 0 ? 0 : -lean * 0.012;
       });
-      if (nSt && food.id === 'ramen') foodMeshes.ramen.userData.level.rotation.z = clamp(lean, -0.4, 0.4);   // the soup stays level while the bowl tips
+      if (nSt && food.id === 'ramen') foodMeshes.ramen.userData.level.rotation.z = clamp(lean, -0.4, 0.4) * 0.8;   // the soup stays level while the bowl tips
       const calm = inZone ? 0.35 + 0.15 * Math.sin(T * 5) : 0;   // green glow while it is rock steady
       trayRim.material.emissive.setRGB(hot * (0.6 + 0.4 * Math.sin(T * 14)), calm * (1 - hot), calm * 0.5 * (1 - hot));
       stream.visible = false;
@@ -2138,7 +2135,7 @@ requestAnimationFrame(() => setTimeout(() => {
     state = 'play';
     $('title').hidden = true; $('over').hidden = true;
     $('hud').hidden = false; $('help').hidden = false; $('sys').hidden = false; $('paused').hidden = true;
-    $('help').textContent = document.body.classList.contains('touch') ? '' : oneHand ? 'A D 移動（なめらかに。倒れる方へ曲がると立て直せる） ・ W ジャンプ ・ S しゃがむ' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウスを倒れる方へ動かして支える';
+    $('help').textContent = document.body.classList.contains('touch') ? '' : oneHand ? 'A D 移動（なめらかに乗るとゆれない） ・ W ジャンプ ・ S しゃがむ' : 'A D 移動 ・ W ジャンプ ・ S しゃがむ ・ マウス左右でトレーを傾ける';
     $('pad').hidden = false; trayIn = 0; tpEl.hidden = oneHand;
     let seen = false; try { seen = !!localStorage.getItem('surfdemae-tut'); } catch (e) {}
     tut = seen ? 0 : 1; tutT = 0; tutJumped = false; $('tut').hidden = tut === 0;
@@ -2150,7 +2147,7 @@ requestAnimationFrame(() => setTimeout(() => {
   function setMode(one) {
     oneHand = one;
     document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-checked', String((b.dataset.mode === 'one') === one)));
-    $('rule3').innerHTML = one ? '急に曲がる・乱暴に着地すると積んだ料理がゆれる。<b>なめらかに乗りこなそう</b>（倒れそうな方へ曲がると立て直せる）' : '積んだ料理は放っておくと倒れる。<b>倒れそうな方へ右手を動かして</b>支え続けよう';
+    $('rule3').innerHTML = one ? '急に動き出す・乱暴に着地すると積んだ料理がゆれる。<b>なめらかに乗りこなそう</b>（トレーは腕が自動で水平にする）' : '動き出し・波の斜面・着地で料理が傾く。<b>右手でトレーを傾けて</b>水平にたもとう';
     try { localStorage.setItem('surfdemae-mode2', one ? 'one' : 'two'); } catch (e) {}
   }
   document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode === 'one')));
