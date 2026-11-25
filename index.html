@@ -312,9 +312,9 @@ requestAnimationFrame(() => setTimeout(() => {
   const WALL_X = -9.8, LIP_X = -17.2, MIN_X = -18.5; // the big wave face on the left
   // fragile = how easily it spills
   const FOODS = [
-    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.0, k: 1.0, zeta: 0.32, tcMul: 0.9, wind: 1, jerk: 1, trait: 'ゆらゆら揺れが残る。トレーを急に傾けるとスープがはねる', base: 420, color: 0xe8344a },
-    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.8, k: 1.25, zeta: 0.45, tcMul: 1.0, wind: 1.7, jerk: 0, trait: '軽いので 風であおられやすい', base: 340, color: 0x2d6fb5 },
-    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.6, k: 0.6, zeta: 0.55, tcMul: 1.15, wind: 0.7, jerk: 0, trait: '重いので ゆっくり傾く。傾きだすと戻すのに時間がかかる', base: 280, color: 0xff9d00 },
+    { id: 'ramen', name: 'ラーメン', shop: 'ラーメン屋', fragile: 1.0, k: 1.0, zeta: 0.32, tcMul: 0.9, mus: 0.21, muk: 0.11, edge: 0.21, wind: 1, jerk: 1, trait: 'ゆらゆら揺れが残る。トレーを急に傾けるとスープがはねる', base: 420, color: 0xe8344a },
+    { id: 'sushi', name: 'おすし', shop: 'すし屋', fragile: 0.8, k: 1.25, zeta: 0.45, tcMul: 1.0, mus: 0.25, muk: 0.15, edge: 0.22, wind: 1.7, jerk: 0, trait: '軽いので 風であおられやすい', base: 340, color: 0x2d6fb5 },
+    { id: 'pizza', name: 'ピザ', shop: 'ピザ屋', fragile: 0.6, k: 0.6, zeta: 0.55, tcMul: 1.15, mus: 0.19, muk: 0.1, edge: 0.24, wind: 0.7, jerk: 0, trait: '重いので ゆっくり傾く。傾きだすと戻すのに時間がかかる', base: 280, color: 0xff9d00 },
   ];
   const CUSTOMERS = ['釣りのおじさん', 'ボートの家族', 'ヨットのお姉さん', 'ライフセーバー', '島のおばあちゃん'];
 
@@ -1110,8 +1110,11 @@ requestAnimationFrame(() => setTimeout(() => {
     stackNodes = [];
     FOODS.forEach(f => { const m = foodMeshes[f.id]; if (m.parent) m.parent.remove(m); });
   }
+  const slideS = [], slideU = [];          // how far each dish has slid on the one below, and how fast
   function buildStack(id, n) {
     clearStack();
+    slideS.length = Math.min(slideS.length, n); slideU.length = Math.min(slideU.length, n);
+    for (let i = 0; i < n; i++) { if (slideS[i] === undefined) slideS[i] = 0; if (slideU[i] === undefined) slideU[i] = 0; }
     let parent = stackG;
     for (let i = 0; i < n; i++) {
       const node = new THREE.Group(); node.position.y = i === 0 ? 0.013 : ITEM_H[id];
@@ -1377,6 +1380,7 @@ requestAnimationFrame(() => setTimeout(() => {
   oneHand = false;
   try { oneHand = localStorage.getItem('surfdemae-mode2') === 'one'; } catch (e) {}
   let inZone = false, zoneT = 0, steadyTip = 0, steadyRun = 0, lastTrayA = 0, splashCool = 0;
+  let wasCrooked = false, edgeT = 0;
   let handTilt = 0, tc = 0.32, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
   const HAND_MAX = 0.38;     // how far the right hand can tip the tray (radians)
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
@@ -1475,7 +1479,8 @@ requestAnimationFrame(() => setTimeout(() => {
     $('balMark').style.left = (50 + clamp(n, -1.3, 1.3) / 1.3 * 50) + '%';   // marker = which way the pile is leaning
     $('gaugeWrap').classList.toggle('danger', danger);
     $('pushR').hidden = !(warn && rel < 0); $('pushL').hidden = !(warn && rel > 0);
-    $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : warn ? (rel > 0 ? '← トレーを左へ傾けて' : 'トレーを右へ傾けて →') : 'いいバランス';
+    const crookT = slideS.reduce((a, v) => a + v, 0);
+    $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : !warn && Math.abs(crookT) > food.edge * 0.6 ? (crookT > 0 ? '右にずれてる ← そっと左へ' : '左にずれてる → そっと右へ') : warn ? (rel > 0 ? '← トレーを左へ傾けて' : 'トレーを右へ傾けて →') : 'いいバランス';
     $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
 
@@ -1491,7 +1496,7 @@ requestAnimationFrame(() => setTimeout(() => {
   // the top dish goes over the side
   function dropTop(why) {
     if (phase !== 'deliver' || !stackNodes.length) return;
-    const node = stackNodes.pop();
+    const node = stackNodes.pop(); slideS.length = stackNodes.length; slideU.length = stackNodes.length;
     node.getWorldPosition(_tw);
     dropPiece(node); node.parent.remove(node);
     foodLeft = stackNodes.length / food.n;
@@ -1545,6 +1550,7 @@ requestAnimationFrame(() => setTimeout(() => {
         const ready = Math.abs(lean) < tc * 0.3 || (lean * t.side > 0 && Math.abs(lean) < tc * 0.7);   // steady, or already leaning into the throw
         buildStack(food.id, stackNodes.length + 1); foodLeft = 1;
         leanV += -t.side * (ready ? 0.12 : 0.5) * food.fragile;
+        if (!ready) slideU[stackNodes.length - 1] = (slideU[stackNodes.length - 1] || 0) - t.side * 0.12;   // a sloppy catch lands off-centre
         if (ready) { toast(`ナイスキャッチ！ +${gain(40, 0.12)}`); sfx.good(); sparkle(); }
         else beep(220, 0.12, 'triangle', 0.07, 0.7);
       }
@@ -1555,7 +1561,7 @@ requestAnimationFrame(() => setTimeout(() => {
     for (let i = 0; i < 12; i++) emitFood(_tw.x + rand(-0.2, 0.2), _tw.y + rand(0.05, h), _tw.z + rand(-0.2, 0.2), rand(-0.4, 0.4), rand(0.4, 1.2), rand(-0.4, 0.4), 0xfff3a0, rand(0.4, 0.7), 0.5);
   }
   function pickup() {
-    newLeg('deliver'); buildStack(food.id, 1); lean = 0; leanV = 0; graceT = 4; steadyTip = 0; steadyRun = 0;
+    slideS.length = 0; slideU.length = 0; newLeg('deliver'); buildStack(food.id, 1); lean = 0; leanV = 0; graceT = 4; steadyTip = 0; steadyRun = 0;
     // the rest come flying in one by one from the shop, alternating sides
     tosses.length = 0; const first = Math.random() < 0.5 ? -1 : 1;
     for (let i = 1; i < food.n; i++) tosses.push({ at: 0.55 + i * 0.75, side: i % 2 ? first : -first, mesh: null });
@@ -1775,7 +1781,7 @@ requestAnimationFrame(() => setTimeout(() => {
     const dhxP = waveH(px + 0.5, 0) - waveH(px - 0.5, 0);
     const waveDown = -Math.atan(dhxP) * 0.9 * 1.2;                                  // the slope under you (right side down = +); your arm already soaks up part of it
     const inertia = -clamp(jumpY === 0 ? ax : 0, -45, 45) * 0.0095;                   // speeding up to the right leaves the pile leaning left
-    const handWant = oneHand ? clamp(-waveDown * 0.75 - inertia * 0.55, -HAND_MAX, HAND_MAX) : trayA * HAND_MAX;   // one hand: the arm levels the tray by itself, mostly
+    const handWant = oneHand ? clamp(-waveDown * 0.75 - inertia * 0.55 - slideS.reduce((a, v) => a + v, 0) * 0.8, -HAND_MAX, HAND_MAX) : trayA * HAND_MAX;   // one hand: the arm levels the tray by itself, mostly
     handTilt += (handWant - handTilt) * Math.min(1, dt * 10);
     let brink = 0;
     if (playing && phase === 'deliver' && stackNodes.length) {
@@ -1784,7 +1790,10 @@ requestAnimationFrame(() => setTimeout(() => {
       tc = clamp(0.34 - 0.03 * (n - 2), 0.2, 0.36) * food.tcMul * ease * (crouch ? 1.12 : 1);
       const K = 22 / (1 + 0.22 * (n - 1)) * food.k, C = 2 * food.zeta * Math.sqrt(K);  // taller = slower, bigger sway
       const chop = (Math.sin(T * 2.3) + Math.sin(T * 3.7 + 1)) * (0.012 + bigAmt * 0.04 + (px < WALL_X ? 0.03 : 0)) * theme.rough;
-      const target = (handTilt + waveDown + inertia * food.fragile) * steady + chop * food.wind;   // where the pile wants to settle
+      // a crooked pile carries its weight off-centre, which leans it further the same way
+      let com = 0; for (let i = 1; i < n; i++) com += slideS[i] * (n - i) / n;
+      const target = (handTilt + waveDown + inertia * food.fragile) * steady + chop * food.wind + com * 0.6;   // where the pile wants to settle
+      if (sloshV) for (let i = 1; i < n; i++) slideU[i] += sloshV * 0.03 * rand(0.5, 1.2) * steady;
       leanV += sloshV * 0.33 * steady; sloshV = 0;                                    // jolts
       const nn = Math.abs(lean) / tc;
       if (nn < 1) leanV += (K * (target - lean) - C * leanV) * dt;                    // springs back toward the target
@@ -1792,6 +1801,34 @@ requestAnimationFrame(() => setTimeout(() => {
       gustT -= dt;
       if (gustT <= 0) { gustT = rand(3, 6) / theme.rough; leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.18, 0.34) * food.wind * steady; }
       lean += leanV * dt; graceT -= dt;
+      // DISHES SLIP. Each dish sits on the one below with friction. Tilted past its grip (or jolted) it slides downhill
+      // and stays where it stops, so the pile goes visibly crooked. Tilting the other way slides it back.
+      let slipping = false;
+      for (let i = 1; i < n; i++) {
+        const drive = lean + inertia * 0.6;                                          // the slope this dish feels
+        if (slideU[i] === 0 && Math.abs(drive) > food.mus) { slideU[i] = Math.sign(drive) * 0.01; beep(2600 - i * 220, 0.05, 'triangle', 0.025, 0.8); }   // clink: it lets go
+        if (slideU[i] !== 0) {
+          const before = slideU[i];
+          slideU[i] += 0.7 * (drive - food.muk * Math.sign(before)) * dt;
+          if (Math.sign(slideU[i]) !== Math.sign(before)) { slideU[i] = 0; beep(420, 0.06, 'sine', 0.03, 0.7); }   // clunk: friction stops it
+          else slipping = true;
+        }
+        slideS[i] += slideU[i] * dt;
+      }
+      // a dish slid past the edge of the one below goes over, taking everything above it
+      // past the edge it hangs there teetering for a moment: tilt back in time and it is saved
+      let over = false;
+      for (let i = 1; i < n; i++) if (Math.abs(slideS[i]) > food.edge) { over = true; slideS[i] = Math.sign(slideS[i]) * Math.min(Math.abs(slideS[i]), food.edge * 1.12); }
+      edgeT = over ? edgeT + dt : 0;
+      if (over && edgeT < dt * 1.5) { beep(1800, 0.08, 'square', 0.03, 1.3); hint('お皿がはみ出してる！ 反対へ傾けて！'); }
+      if (edgeT > 0.8) for (let i = 1; i < n; i++) if (Math.abs(slideS[i]) > food.edge && graceT <= 0) {
+        const lostN = stackNodes.length - i; for (let k = 0; k < lostN; k++) dropTop('お皿がすべって');
+        graceT = 1.2; break;
+      }
+      // straightening a crooked pile all the way back is a little feat of its own
+      const crook = slideS.reduce((a, v) => a + Math.abs(v), 0);
+      if (crook > 0.06) wasCrooked = true;
+      if (wasCrooked && crook < 0.015 && !slipping) { wasCrooked = false; toast(`ぴったり！ +${gain(60, 0.2)}`); sfx.good(); sparkle(); }
       teeterT = clamp((Math.abs(lean) - tc) / 0.16, 0, 1) * 0.5;                      // how far over it is (the top dish starts sliding)
       if (Math.abs(lean) > tc + 0.16 && graceT <= 0) {
         const sg = Math.sign(lean);
@@ -1801,7 +1838,7 @@ requestAnimationFrame(() => setTimeout(() => {
       lean = clamp(lean, -(tc + 0.18), tc + 0.18);
       brink = clamp((nn - 0.72) / 0.28, 0, 1);
       // in the green zone the tip keeps growing, with a sparkle and a soft chime each time it ticks up
-      inZone = nn < 0.3 && !tosses.length;
+      inZone = nn < 0.3 && !tosses.length && slideS.reduce((a, v) => a + Math.abs(v), 0) < 0.03;
       if (inZone) {
         zoneT += dt; steadyTip += dt * (14 + n * 3);
         if (zoneT > 1) { zoneT = 0; beep(1568 + Math.min(steadyRun, 6) * 110, 0.09, 'sine', 0.035); steadyRun++; sparkle(); }
@@ -1866,9 +1903,8 @@ requestAnimationFrame(() => setTimeout(() => {
       const relLean = lean - trayWorld;                                     // so the pile shows its real lean, not the tray's
       const hot = clamp((Math.abs(nn) - 0.55) / 0.45, 0, 1);
       stackNodes.forEach((node, i) => {
-        node.rotation.z = -relLean * (i === 0 ? 0.55 : 0.45 / Math.max(1, nSt - 1)) + Math.sin(T * 38 + i * 1.7) * 0.014 * hot;   // rattles when it is about to go
-        if (i === nSt - 1) node.position.x = (i === 0 ? 0 : -lean * 0.012) + Math.sign(lean) * teeterT * 0.25;                     // the top dish starts to slide as it teeters
-        else node.position.x = i === 0 ? 0 : -lean * 0.012;
+        node.rotation.z = -relLean * (i === 0 ? 0.55 : 0.45 / Math.max(1, nSt - 1)) + Math.sin(T * 38 + i * 1.7) * 0.014 * hot + (i > 0 && Math.abs(slideS[i] || 0) > food.edge ? Math.sign(slideS[i]) * (0.12 + Math.sin(T * 30) * 0.06) : 0);   // a dish hanging off the edge tips and rocks   // rattles when it is about to go
+        node.position.x = (i === 0 ? 0 : (slideS[i] || 0)) + (i === nSt - 1 ? Math.sign(lean) * teeterT * 0.25 : 0);   // each dish sits where it has slid to
       });
       if (nSt && food.id === 'ramen') foodMeshes.ramen.userData.level.rotation.z = clamp(lean, -0.4, 0.4) * 0.8;   // the soup stays level while the bowl tips
       const calm = inZone ? 0.35 + 0.15 * Math.sin(T * 5) : 0;   // green glow while it is rock steady
