@@ -1385,7 +1385,7 @@ requestAnimationFrame(() => setTimeout(() => {
   oneHand = false;
   try { oneHand = localStorage.getItem('surfdemae-mode2') === 'one'; } catch (e) {}
   let inZone = false, zoneT = 0, steadyTip = 0, steadyRun = 0, lastTrayA = 0, splashCool = 0;
-  let wasCrooked = false, edgeT = 0;
+  let wasCrooked = false, edgeT = 0, thrill = 0, thrillPeak = 0, gustDir = 0;
   let handTilt = 0, tc = 0.32, lean = 0, leanV = 0, graceT = 0, gustT = 3, teeterT = 0, slowMo = 1, slowBank = 0.7, beatT = 0;      // balance: how far the stack is leaning, and how fast
   const HAND_MAX = 0.38;     // how far the right hand can tip the tray (radians)
   let nextBig = 20, bigLeft = 0, setNo = 0, prevSurf = 0, surfVel = 0, crouch = false;
@@ -1414,7 +1414,7 @@ requestAnimationFrame(() => setTimeout(() => {
   function toast(text, bad) { const el = $('trick'); el.textContent = text; el.style.color = bad ? '#ffb3c0' : '#9ff3d0'; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); trickT = 0.9; }
   function breakChain(amount, say) { if (mult > 1.05 && say) toast(amount >= 4 ? 'コンボ切れ…' : '倍率ダウン…', true); mult = Math.max(1, mult - amount); }
   function newLeg(p, keepFood) {
-    phase = p; legTime = 0; targetWait = 1.0;
+    phase = p; legTime = 0; targetWait = 1.0; thrill = 0; thrillPeak = 0; gustDir = 0;
     if (p === 'pickup') { if (!keepFood) food = nextFood(); foodLeft = 1; clearStack(); tosses.forEach(t => { if (t.mesh) stackG.remove(t.mesh); }); tosses.length = 0; }
     else { customer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; }
   }
@@ -1442,10 +1442,10 @@ requestAnimationFrame(() => setTimeout(() => {
   function pop(text, color) { popQ.push([text, color]); if (popTimer <= 0) showNextPop(); }
   let hudDirty = true;
   function measureHud() { const hb = $('hud').getBoundingClientRect().bottom; if (hb > 0) { document.documentElement.style.setProperty('--hudB', Math.round(hb) + 'px'); hudDirty = false; } }
-  function hint(text) {
+  function hint(text, dur = 1) {
     if (tut) return;                                   // the practice card is already talking
     if (lastHint === text && hintTimer > 0.5) { hintTimer = 1; return; }
-    lastHint = text; $('hint').textContent = text; $('hint').classList.add('show'); hintTimer = 1;
+    lastHint = text; $('hint').textContent = text; $('hint').classList.add('show'); hintTimer = dur;
   }
   function flash() { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.35; requestAnimationFrame(() => { f.style.transition = 'opacity .4s'; f.style.opacity = 0; }); }
 
@@ -1485,7 +1485,7 @@ requestAnimationFrame(() => setTimeout(() => {
     $('gaugeWrap').classList.toggle('danger', danger);
     $('pushR').hidden = !(warn && rel < 0); $('pushL').hidden = !(warn && rel > 0);
     const crookT = slideS.reduce((a, v) => a + v, 0);
-    $('gaugeTxt').textContent = danger ? 'たおれる！ 立て直して！' : !warn && Math.abs(crookT) > food.edge * 0.6 ? (crookT > 0 ? '右にずれてる ← そっと左へ' : '左にずれてる → そっと右へ') : warn ? (rel > 0 ? '← トレーを左へ傾けて' : 'トレーを右へ傾けて →') : 'いいバランス';
+    $('gaugeTxt').textContent = thrill > 12 && warn ? `${danger ? 'たおれる！' : 'ギリギリ…'} スリル +${Math.round(thrill)}` : danger ? 'たおれる！ 立て直して！' : !warn && Math.abs(crookT) > food.edge * 0.6 ? (crookT > 0 ? '右にずれてる ← そっと左へ' : '左にずれてる → そっと右へ') : warn ? (rel > 0 ? '← トレーを左へ傾けて' : 'トレーを右へ傾けて →') : 'いいバランス';
     $('gaugeTxt').style.color = danger ? '#e8344a' : warn ? '#c47a00' : '#1f9a63';
   }
 
@@ -1501,6 +1501,7 @@ requestAnimationFrame(() => setTimeout(() => {
   // the top dish goes over the side
   function dropTop(why) {
     if (phase !== 'deliver' || !stackNodes.length) return;
+    if (thrill > 12) toast(`スリル貯金 パー… (-${Math.round(thrill)})`, true); thrill = 0; thrillPeak = 0;
     const node = stackNodes.pop(); slideS.length = stackNodes.length; slideU.length = stackNodes.length;
     node.getWorldPosition(_tw);
     dropPiece(node); node.parent.remove(node);
@@ -1757,15 +1758,7 @@ requestAnimationFrame(() => setTimeout(() => {
           if (carveSign && sg !== carveSign && carveT < 1.3 && carveCool <= 0) { carveCool = 2; toast(`カットバック！ +${gain(60, 0.2)}`); for (let i = 0; i < 26; i++) emit(px, surfer.position.y + 0.2, rand(0, 1), -sg * rand(3, 8), rand(3, 7), rand(0, 3)); }
           if (sg !== carveSign) { carveSign = sg; carveT = 0; } else carveT = Math.min(carveT, 0.4);
         }
-        // saving the food from the very edge without spilling is the finest skill in the game
-        if (phase === 'deliver') {
-          const nn = Math.abs(rel) / limitNow();
-          dangerT += dt;
-          if (nn > 1) dangerArmed = false;
-          else if (nn > 0.8) { dangerArmed = true; dangerT = 0; }
-          else if (nn < 0.25 && dangerArmed && dangerT < 1.6) { dangerArmed = false; toast(`ナイスリカバリー！ +${gain(90, 0.3)}`); sfx.good(); }
-          else if (dangerT > 1.6) dangerArmed = false;
-        }
+        // (saving the pile from the edge is rewarded by the near-miss purse in the balance block)
         if (trickT > 0) { trickT -= dt; if (trickT <= 0) $('trick').classList.remove('show'); }
       }
     } else speed += (16 - speed) * Math.min(1, dt);
@@ -1804,7 +1797,19 @@ requestAnimationFrame(() => setTimeout(() => {
       if (nn < 1) leanV += (K * (target - lean) - C * leanV) * dt;                    // springs back toward the target
       else leanV += (K * 0.35 * (target - lean) + 16 * (Math.abs(lean) - tc) * Math.sign(lean) - C * leanV) * dt;   // past the tipping point gravity takes over
       gustT -= dt;
-      if (gustT <= 0) { gustT = rand(3, 6) / theme.rough; leanV += (Math.random() < 0.5 ? -1 : 1) * rand(0.18, 0.34) * food.wind * steady; }
+      // WIND you can see coming: a second ahead it is announced (sound, streaks, arrow), so tipping the tray into it is a skill
+      if (gustT < 1.1 && !gustDir) {
+        gustDir = Math.random() < 0.5 ? -1 : 1;
+        hint(gustDir > 0 ? '💨 風が来る → トレーを左へ構えて' : '💨 風が来る ← トレーを右へ構えて', 1.6);
+        beep(500, 0.9, 'sawtooth', 0.018, 1.8);
+      }
+      if (gustDir && gustT < 1.1 && Math.random() < 0.5) emit(px - gustDir * 5, waveH(px, 0) + 1.2 + rand(0, 1.6), rand(-8, -4), gustDir * rand(8, 12), rand(-0.3, 0.3), 0, 0.5);   // spray streaks blowing across
+      if (gustT <= 0) {
+        const ready = handTilt * gustDir < -0.07;                                   // tray already tipped into the wind
+        leanV += gustDir * rand(0.2, 0.36) * food.wind * steady * (ready ? 0.45 : 1);
+        if (ready) { toast(`読み通り！ +${gain(50, 0.1)}`); beep(1320, 0.1, 'triangle', 0.05); }
+        gustT = rand(3, 6) / theme.rough; gustDir = 0;
+      }
       lean += leanV * dt; graceT -= dt;
       // DISHES SLIP. Each dish sits on the one below with friction. Tilted past its grip (or jolted) it slides downhill
       // and stays where it stops, so the pile goes visibly crooked. Tilting the other way slides it back.
@@ -1843,6 +1848,12 @@ requestAnimationFrame(() => setTimeout(() => {
       lean = clamp(lean, -(tc + 0.18), tc + 0.18);
       brink = clamp((nn - 0.72) / 0.28, 0, 1);
       // in the green zone the tip keeps growing, with a sparkle and a soft chime each time it ticks up
+      // GIRI-GIRI: hanging near the tipping point fills a 'thrill' purse; bring the pile back to calm to cash it, drop a dish and it is lost
+      if (nn > 0.65) { thrill += dt * (nn > 1 ? 70 : 22) * (1 + 0.15 * (n - 1)); thrillPeak = Math.max(thrillPeak, nn); }
+      else if (nn < 0.35 && thrill > 0) {
+        if (thrill > 12) { const pts = Math.round(thrill * (thrillPeak > 1 ? 1.5 : 1)); toast(`${thrillPeak > 1 ? 'ギリギリセーフ！！' : 'ヒヤッとセーフ！'} +${gain(pts, thrillPeak > 1 ? 0.4 : 0.15)}`); sfx.good(); sparkle(); }
+        thrill = 0; thrillPeak = 0;
+      }
       inZone = nn < 0.3 && !tosses.length && slideS.reduce((a, v) => a + Math.abs(v), 0) < 0.03;
       if (inZone) {
         zoneT += dt; steadyTip += dt * (14 + n * 3);
